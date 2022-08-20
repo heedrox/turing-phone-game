@@ -1,0 +1,23 @@
+{
+  "name": "turing-phone-game",
+  "version": "1.0.0",
+  "description": "Ask a question to the group. The group and an AI will answer. Can you spot the fake answer?",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/heedrox/turing-phone-game.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/heedrox/turing-phone-game/issues"
+  },
+  "homepage": "https://github.com/heedrox/turing-phone-game#readme",
+  "volta": {
+    "node": "14.20.0",
+    "yarn": "1.22.19"
+  }
+}
