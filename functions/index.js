@@ -17,7 +17,12 @@ const openai = new OpenAIApi(configuration);
 
 const PROMPT_TEMPLATE = (question) => `The following is a conversation with an AI assistant. The assistant is joyful, clever and very friendly, and always answers with one sentence. Human: ${question} IA: `
 
+const allowDomainCors = (request, response) => {
+    const origin = request.get('Origin')
+    response.set("Access-Control-Allow-Origin", origin ? origin : "*");
+}
 exports.aiTest = functions.https.onRequest(async (request, response) => {
+    allowDomainCors(request, response)
     const question = request.query.question
 
     if (!question) {
