@@ -1,1 +1,3 @@
 node_modules/
+firebaseConfig.json
+serviceAccountKey.json
