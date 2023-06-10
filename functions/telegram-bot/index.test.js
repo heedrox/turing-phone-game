@@ -25,30 +25,62 @@ describe('Telegram Bot', () => {
         await Promise.all(snapshot.docs.map(doc => doc.ref.delete()));
         jest.resetModules()
     })
-    it('creates a new game', async () => {
-        const res = { sendStatus: jest.fn() }
-        const req = {
-            body: {
-                message: {
-                    chat: {
-                        id: 12345,
+    describe('when creating new game', () => {
+        it('creates a new game', async () => {
+            const res = { sendStatus: jest.fn() }
+            const req = {
+                body: {
+                    message: {
+                        chat: {
+                            id: 12345,
+                        },
+                        text: '/create',
                     },
-                    text: '/create',
                 },
-            },
-        };
-        const mockBot = mockTelegramBot();
+            };
+            const mockBot = mockTelegramBot();
 
-        const functions = require('./index')
-        await functions.telegramBot(req, res);
+            const functions = require('./index')
+            await functions.telegramBot(req, res);
 
-        expect(res.sendStatus).toHaveBeenCalledWith(200)
-        expect(mockBot.sendMessage).toHaveBeenCalledWith(
-            12345,
-            expect.stringMatching(/^Se ha creado una nueva partida/),
-            { parse_mode: 'Markdown' }
-        )
+            expect(res.sendStatus).toHaveBeenCalledWith(200)
+            expect(mockBot.sendMessage).toHaveBeenCalledWith(
+                12345,
+                expect.stringMatching(/^Se ha creado una nueva partida/),
+                { parse_mode: 'Markdown' }
+            )
+        })
+        it('removes from previous game if already joined', async () => {
+            await admin.firestore().collection('partidas').doc('CDE456').set({
+                chatIds: [12345]
+            });
+            const res = { sendStatus: jest.fn() }
+            const req = {
+                body: {
+                    message: {
+                        chat: {
+                            id: 12345,
+                        },
+                        text: '/create',
+                    },
+                },
+            };
+            const mockBot = mockTelegramBot();
+
+            const functions = require('./index')
+            await functions.telegramBot(req, res);
+
+            expect(res.sendStatus).toHaveBeenCalledWith(200)
+            expect(mockBot.sendMessage).toHaveBeenCalledWith(
+                12345,
+                expect.stringMatching(/^Se ha creado una nueva partida/),
+                { parse_mode: 'Markdown' }
+            )
+            const previousGame = await admin.firestore().collection('partidas').doc('CDE456').get()
+            expect(previousGame.data().chatIds).toStrictEqual([])
+        })
     })
+
     describe('when joining', () => {
         it('does not join if not valid game', async () => {
             const res = { sendStatus: jest.fn() }

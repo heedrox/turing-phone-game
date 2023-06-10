@@ -67,29 +67,18 @@ exports.telegramBot = async (req, res) => {
                 // Elimina al usuario de la partida anterior
                 const updatedChatIds = chatIds.filter((id) => id !== chatId);
                 await db.collection('partidas').doc(partidaId).update({ chatIds: updatedChatIds });
-
-                // Crea una nueva partida con código aleatorio
-                const codigo = generateGameCode();
-
-                // Guarda el chatId del creador en la nueva partida
-                await db.collection('partidas').doc(codigo).set({
-                    chatIds: [chatId],
-                });
-
-                const joinLink = `https://t.me/turingphonebot?start=${codigo}`;
-                bot.sendMessage(chatId, `Se ha creado una nueva partida. ¡Únete a ella! [Unirse](${joinLink})`, { parse_mode: 'Markdown' });
-            } else {
-                // Crea una nueva partida con código aleatorio
-                const codigo = generateGameCode();
-
-                // Guarda el chatId del creador en la nueva partida
-                await db.collection('partidas').doc(codigo).set({
-                    chatIds: [chatId],
-                });
-
-                const joinLink = `https://t.me/turingphonebot?start=${codigo}`;
-                bot.sendMessage(chatId, `Se ha creado una nueva partida. ¡Únete a ella! [${joinLink}](${joinLink})`, { parse_mode: 'Markdown' });
             }
+            // Crea una nueva partida con código aleatorio
+            const codigo = generateGameCode();
+
+            // Guarda el chatId del creador en la nueva partida
+            await db.collection('partidas').doc(codigo).set({
+                chatIds: [chatId],
+            });
+
+            const joinLink = `https://t.me/turingphonebot?start=${codigo}`;
+            bot.sendMessage(chatId, `Se ha creado una nueva partida. ¡Únete a ella! [${joinLink}](${joinLink})`, { parse_mode: 'Markdown' });
+
         } else {
             // Busca el código de partida correspondiente al chatId
             const partidaQuerySnapshot = await db.collection('partidas').where('chatIds', 'array-contains', chatId).get();
