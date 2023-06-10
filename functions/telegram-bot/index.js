@@ -1,5 +1,4 @@
 const admin = require('firebase-admin');
-const {TelegramBotCreator} = require("./infrastructure/telegram-bot-creator");
 require('dotenv').config();
 
 if (admin.apps.length === 0) {
@@ -7,8 +6,6 @@ if (admin.apps.length === 0) {
 }
 
 const db = admin.firestore();
-
-const bot = TelegramBotCreator.create()
 
 // Genera un código de partida aleatorio
 function generateGameCode() {
@@ -24,9 +21,11 @@ function generateGameCode() {
 }
 
 exports.telegramBot = async (req, res) => {
+    const {TelegramBotCreator} = require("./infrastructure/telegram-bot-creator");
+    const bot = TelegramBotCreator.create()
+
     const { message } = req.body;
 
-    console.log('voy', message)
     if (message && message.text) {
         const chatId = message.chat.id;
         const text = message.text;
@@ -34,11 +33,8 @@ exports.telegramBot = async (req, res) => {
         if (text.startsWith('/join')) {
             const codigo = text.split(' ')[1];
 
-            console.log('existe?')
             // Verifica si el código existe en Firestore
             const partidaSnapshot = await db.collection('partidas').doc(codigo).get();
-
-            console.log('fin')
             if (partidaSnapshot.exists) {
                 const partidaData = partidaSnapshot.data();
                 const chatIds = partidaData.chatIds || [];
@@ -57,7 +53,6 @@ exports.telegramBot = async (req, res) => {
                     bot.sendMessage(chatId, `Te has unido a la partida con código ${codigo}`);
                 }
             } else {
-                console.log('no existe', bot)
                 bot.sendMessage(chatId, `El código ${codigo} no es válido`);
             }
         } else if (text === '/create') {
@@ -93,7 +88,7 @@ exports.telegramBot = async (req, res) => {
                 });
 
                 const joinLink = `https://t.me/turingphonebot?start=${codigo}`;
-                bot.sendMessage(chatId, `Se ha creado una nueva partida. ¡Únete a ella! [Unirse](${joinLink})`, { parse_mode: 'Markdown' });
+                bot.sendMessage(chatId, `Se ha creado una nueva partida. ¡Únete a ella! [${joinLink}](${joinLink})`, { parse_mode: 'Markdown' });
             }
         } else {
             // Busca el código de partida correspondiente al chatId

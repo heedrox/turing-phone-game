@@ -1,43 +1,32 @@
 // const admin = require('firebase-admin');
 const admin = require('firebase-admin');
 require('dotenv').config();
-
-
 admin.initializeApp();
 
-const mockBot = {
-    sendMessage: jest.fn()
-}
 
+function mockTelegramBot() {
+    const mockBot = {
+        sendMessage: jest.fn()
+    }
+    jest.mock('./infrastructure/telegram-bot-creator', () => ({
+        TelegramBotCreator: {create: () => mockBot}
+    }))
+    return mockBot;
+}
 
 describe('Telegram Bot', () => {
 
-    it('joins a valid game', async () => {
+    beforeEach(async () => {
+        const snapshot = await admin.firestore().collection('partidas').get()
+        await Promise.all(snapshot.docs.map(doc => doc.ref.delete()));
+    })
+    afterEach(async () => {
+        const snapshot = await admin.firestore().collection('partidas').get()
+        await Promise.all(snapshot.docs.map(doc => doc.ref.delete()));
+        jest.resetModules()
+    })
+    it('creates a new game', async () => {
         const res = { sendStatus: jest.fn() }
-        const req = {
-            body: {
-                message: {
-                    chat: {
-                        id: 12345,
-                    },
-                    text: '/join ABC123',
-                },
-            },
-        };
-        jest.mock('./infrastructure/telegram-bot-creator', () => ({
-          TelegramBotCreator: { create: () => mockBot }
-        }))
-
-
-        const functions = require('./index')
-        await functions.telegramBot(req, res);
-
-
-        expect(res.sendStatus).toHaveBeenCalledWith(200)
-        expect(mockBot.sendMessage).toHaveBeenCalledWith(12345, "El código ABC123 no es válido")
-    });
-
-    xit('should create a new partida', async () => {
         const req = {
             body: {
                 message: {
@@ -48,20 +37,65 @@ describe('Telegram Bot', () => {
                 },
             },
         };
+        const mockBot = mockTelegramBot();
 
-        await functions.telegramBot(req, {});
+        const functions = require('./index')
+        await functions.telegramBot(req, res);
 
-        expect(botStub).toHaveBeenCalledTimes(1);
-        expect(botStub).toHaveBeenCalledWith('YOUR_TELEGRAM_TOKEN');
-        expect(sendMessageStub).toHaveBeenCalledTimes(1);
-        expect(sendMessageStub).toHaveBeenCalledWith(expect.any(Number), expect.stringContaining('Se ha creado una nueva partida'));
-        expect(db.collection).toHaveBeenCalledTimes(2);
-        expect(db.collection).toHaveBeenCalledWith('partidas');
-        expect(db.doc).toHaveBeenCalledTimes(1);
-        expect(db.doc).toHaveBeenCalledWith(expect.any(String));
-        expect(db.set).toHaveBeenCalledTimes(1);
-        expect(db.set).toHaveBeenCalledWith({
-            chatIds: expect.arrayContaining([12345]),
+        expect(res.sendStatus).toHaveBeenCalledWith(200)
+        expect(mockBot.sendMessage).toHaveBeenCalledWith(
+            12345,
+            expect.stringMatching(/^Se ha creado una nueva partida/),
+            { parse_mode: 'Markdown' }
+        )
+    })
+    describe('when joining', () => {
+        it('does not join if not valid game', async () => {
+            const res = { sendStatus: jest.fn() }
+            const req = {
+                body: {
+                    message: {
+                        chat: {
+                            id: 12345,
+                        },
+                        text: '/join ABC123',
+                    },
+                },
+            };
+            const mockBot = mockTelegramBot();
+
+
+            const functions = require('./index')
+            await functions.telegramBot(req, res);
+
+
+            expect(res.sendStatus).toHaveBeenCalledWith(200)
+            expect(mockBot.sendMessage).toHaveBeenCalledWith(12345, "El código ABC123 no es válido")
+
         });
-    });
+
+        it('joins if valid game', async () => {
+            const res = { sendStatus: jest.fn() }
+            await admin.firestore().collection('partidas').doc('ABC123').set({
+                chatIds: [98765]
+            });
+            const req = {
+                body: {
+                    message: {
+                        chat: {
+                            id: 12345,
+                        },
+                        text: '/join ABC123',
+                    },
+                },
+            };
+            const mockBot = mockTelegramBot();
+
+            const functions = require('./index')
+            await functions.telegramBot(req, res);
+
+            expect(res.sendStatus).toHaveBeenCalledWith(200)
+            expect(mockBot.sendMessage).toHaveBeenCalledWith(12345, "Te has unido a la partida con código ABC123")
+        });
+    })
 });
