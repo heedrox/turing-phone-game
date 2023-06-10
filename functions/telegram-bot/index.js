@@ -1,6 +1,5 @@
-const functions = require('firebase-functions');
 const admin = require('firebase-admin');
-const TelegramBot = require('node-telegram-bot-api');
+const {TelegramBotCreator} = require("./infrastructure/telegram-bot-creator");
 require('dotenv').config();
 
 if (admin.apps.length === 0) {
@@ -9,8 +8,7 @@ if (admin.apps.length === 0) {
 
 const db = admin.firestore();
 
-const telegramToken = process.env.TELEGRAM_TOKEN;
-const bot = new TelegramBot(telegramToken);
+const bot = TelegramBotCreator.create()
 
 // Genera un código de partida aleatorio
 function generateGameCode() {
@@ -59,6 +57,7 @@ exports.telegramBot = async (req, res) => {
                     bot.sendMessage(chatId, `Te has unido a la partida con código ${codigo}`);
                 }
             } else {
+                console.log('no existe', bot)
                 bot.sendMessage(chatId, `El código ${codigo} no es válido`);
             }
         } else if (text === '/create') {

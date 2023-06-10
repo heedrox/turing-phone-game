@@ -1,17 +1,19 @@
 // const admin = require('firebase-admin');
 const admin = require('firebase-admin');
-const TelegramBot = require('node-telegram-bot-api');
 require('dotenv').config();
 
 
 admin.initializeApp();
 
-const functions = require('./index')
-const botApi = jest.mock('node-telegram-bot-api');
+const mockBot = {
+    sendMessage: jest.fn()
+}
+
 
 describe('Telegram Bot', () => {
 
     it('joins a valid game', async () => {
+        const res = { sendStatus: jest.fn() }
         const req = {
             body: {
                 message: {
@@ -22,11 +24,17 @@ describe('Telegram Bot', () => {
                 },
             },
         };
+        jest.mock('./infrastructure/telegram-bot-creator', () => ({
+          TelegramBotCreator: { create: () => mockBot }
+        }))
 
-        await functions.telegramBot(req);
+
+        const functions = require('./index')
+        await functions.telegramBot(req, res);
 
 
-        expect(botApi.sendMessage).toHaveBeenCalledWith('xx')
+        expect(res.sendStatus).toHaveBeenCalledWith(200)
+        expect(mockBot.sendMessage).toHaveBeenCalledWith(12345, "El código ABC123 no es válido")
     });
 
     xit('should create a new partida', async () => {
