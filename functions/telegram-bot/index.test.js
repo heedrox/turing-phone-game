@@ -28,6 +28,10 @@ function requestWithChatAndText(id, text) {
     return req;
 }
 
+function mockResponse() {
+    return {sendStatus: jest.fn()};
+}
+
 describe('Telegram Bot', () => {
 
     beforeEach(async () => {
@@ -41,7 +45,7 @@ describe('Telegram Bot', () => {
     })
     describe('when creating new game', () => {
         it('creates a new game', async () => {
-            const res = { sendStatus: jest.fn() }
+            const res = mockResponse()
             const req = requestWithChatAndText(12345, '/create');
             const mockBot = mockTelegramBot();
 
@@ -59,7 +63,7 @@ describe('Telegram Bot', () => {
             await admin.firestore().collection('partidas').doc('CDE456').set({
                 chatIds: [12345]
             });
-            const res = { sendStatus: jest.fn() }
+            const res = mockResponse()
             const req = requestWithChatAndText(12345, '/create');
             const mockBot = mockTelegramBot();
 
@@ -79,7 +83,7 @@ describe('Telegram Bot', () => {
 
     describe('when joining', () => {
         it('does not join if not valid game', async () => {
-            const res = { sendStatus: jest.fn() }
+            const res = mockResponse()
             const req = requestWithChatAndText(12345, '/join ABC123');
             const mockBot = mockTelegramBot();
 
@@ -94,7 +98,7 @@ describe('Telegram Bot', () => {
         });
 
         it('joins if valid game', async () => {
-            const res = { sendStatus: jest.fn() }
+            const res = mockResponse()
             await admin.firestore().collection('partidas').doc('ABC123').set({
                 chatIds: [98765]
             });
