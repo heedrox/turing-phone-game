@@ -1,12 +1,8 @@
-const admin = require('firebase-admin');
 const {GameCode} = require("./domain/game-code");
+const {FirebaseDatabase} = require("./infrastructure/firebase-database");
 require('dotenv').config();
 
-if (admin.apps.length === 0) {
-    admin.initializeApp();
-}
-
-const db = admin.firestore();
+const db = FirebaseDatabase.create()
 
 exports.telegramBot = async (req, res) => {
     const {TelegramBotCreator} = require("./infrastructure/telegram-bot-creator");
@@ -19,48 +15,37 @@ exports.telegramBot = async (req, res) => {
         const text = message.text;
 
         if (text.startsWith('/join')) {
-            const codigo = text.split(' ')[1];
+            const code = text.split(' ')[1];
 
             // Verifica si el código existe en Firestore
-            const partidaSnapshot = await db.collection('partidas').doc(codigo).get();
-            if (partidaSnapshot.exists) {
-                const partidaData = partidaSnapshot.data();
+            const partidaData  = await db.getGameByCode(code)
+            if (partidaData) {
                 const chatIds = partidaData.chatIds || [];
 
                 if (chatIds.includes(chatId)) {
-                    bot.sendMessage(chatId, `Ya estás en la partida ${codigo}.`);
+                    await bot.sendMessage(chatId, `Ya estás en la partida ${code}.`);
                 } else {
-                    // Elimina al usuario de todas las partidas anteriores
-                    await removeUserFromAllPartidas(chatId);
-
-                    // Guarda el chatId en la partida correspondiente
-                    await db.collection('partidas').doc(codigo).update({
-                        chatIds: admin.firestore.FieldValue.arrayUnion(chatId),
-                    });
-
-                    bot.sendMessage(chatId, `Te has unido a la partida con código ${codigo}`);
+                    await db.removeUserFromAllGames(chatId)
+                    await db.addUserToGame(chatId, code)
+                    await bot.sendMessage(chatId, `Te has unido a la partida con código ${code}`);
                 }
             } else {
-                bot.sendMessage(chatId, `El código ${codigo} no es válido`);
+                await bot.sendMessage(chatId, `El código ${code} no es válido`);
             }
         } else if (text === '/create') {
-            await removeUserFromAllPartidas(chatId);
+            await db.removeUserFromAllGames(chatId);
             // Crea una nueva partida con código aleatorio
-            const codigo = GameCode.create()
+            const code = GameCode.create()
 
-            // Guarda el chatId del creador en la nueva partida
-            await db.collection('partidas').doc(codigo).set({
-                chatIds: [chatId],
-            });
+            await db.createEmptyGame(chatId, code)
 
-            const joinLink = `https://t.me/turingphonebot?start=${codigo}`;
-            bot.sendMessage(chatId, `Se ha creado una nueva partida. ¡Únete a ella! [${joinLink}](${joinLink})`, { parse_mode: 'Markdown' });
+            const joinLink = `https://t.me/turingphonebot?start=${code}`;
+            await bot.sendMessage(chatId, `Se ha creado una nueva partida. ¡Únete a ella! [${joinLink}](${joinLink})`, { parse_mode: 'Markdown' });
         } else {
-            // Busca el código de partida correspondiente al chatId
-            const partidaQuerySnapshot = await db.collection('partidas').where('chatIds', 'array-contains', chatId).get();
+            const partidaQuerySnapshot = await db.findGamesByUser(chatId)
 
             if (partidaQuerySnapshot.empty) {
-                bot.sendMessage(
+                await bot.sendMessage(
                     chatId,
                     'No te has unido a ninguna partida. Usa el comando "/join CODIGO" para unirte a una, o "/create" para crear una nueva.'
                 );
@@ -70,9 +55,9 @@ exports.telegramBot = async (req, res) => {
                     const { chatIds } = partidaData;
 
                     // Envía el mensaje a todos los participantes de la partida
-                    chatIds.forEach((participantChatId) => {
+                    chatIds.forEach(async (participantChatId) => {
                         if (participantChatId !== chatId) {
-                            bot.sendMessage(participantChatId, text);
+                            await bot.sendMessage(participantChatId, text);
                         }
                     });
                 });
@@ -83,17 +68,4 @@ exports.telegramBot = async (req, res) => {
     res.sendStatus(200);
 };
 
-// Función para eliminar al usuario de todas las partidas anteriores
-async function removeUserFromAllPartidas(chatId) {
-    const partidasQuerySnapshot = await db.collection('partidas').where('chatIds', 'array-contains', chatId).get();
 
-    partidasQuerySnapshot.forEach((doc) => {
-        const partidaId = doc.id;
-        const partidaData = doc.data();
-        const { chatIds } = partidaData;
-
-        const updatedChatIds = chatIds.filter((id) => id !== chatId);
-
-        db.collection('partidas').doc(partidaId).update({ chatIds: updatedChatIds });
-    });
-}
