@@ -40,7 +40,7 @@ exports.telegramBot = async (req, res) => {
                 const chatIds = partidaData.chatIds || [];
 
                 if (chatIds.includes(chatId)) {
-                    bot.sendMessage(chatId, 'Ya estás en una partida. No puedes unirte a otra.');
+                    bot.sendMessage(chatId, `Ya estás en la partida ${codigo}.`);
                 } else {
                     // Elimina al usuario de todas las partidas anteriores
                     await removeUserFromAllPartidas(chatId);
@@ -56,18 +56,7 @@ exports.telegramBot = async (req, res) => {
                 bot.sendMessage(chatId, `El código ${codigo} no es válido`);
             }
         } else if (text === '/create') {
-            // Verifica si el usuario ya está en una partida
-            const partidaSnapshot = await db.collection('partidas').where('chatIds', 'array-contains', chatId).get();
-
-            if (!partidaSnapshot.empty) {
-                const partidaId = partidaSnapshot.docs[0].id;
-                const partidaData = partidaSnapshot.docs[0].data();
-                const { chatIds } = partidaData;
-
-                // Elimina al usuario de la partida anterior
-                const updatedChatIds = chatIds.filter((id) => id !== chatId);
-                await db.collection('partidas').doc(partidaId).update({ chatIds: updatedChatIds });
-            }
+            await removeUserFromAllPartidas(chatId);
             // Crea una nueva partida con código aleatorio
             const codigo = generateGameCode();
 
@@ -78,7 +67,6 @@ exports.telegramBot = async (req, res) => {
 
             const joinLink = `https://t.me/turingphonebot?start=${codigo}`;
             bot.sendMessage(chatId, `Se ha creado una nueva partida. ¡Únete a ella! [${joinLink}](${joinLink})`, { parse_mode: 'Markdown' });
-
         } else {
             // Busca el código de partida correspondiente al chatId
             const partidaQuerySnapshot = await db.collection('partidas').where('chatIds', 'array-contains', chatId).get();

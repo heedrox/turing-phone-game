@@ -15,7 +15,7 @@ function mockTelegramBot() {
 }
 
 function requestWithChatAndText(id, text) {
-    const req = {
+    return {
         body: {
             message: {
                 chat: {
@@ -25,7 +25,6 @@ function requestWithChatAndText(id, text) {
             },
         },
     };
-    return req;
 }
 
 function mockResponse() {
@@ -129,6 +128,21 @@ describe('Telegram Bot', () => {
             expect(res.sendStatus).toHaveBeenCalledWith(200)
             expect(mockBot.sendMessage).toHaveBeenCalledWith(12345, "Te has unido a la partida con código ABC123")
 
+        })
+
+        it('does not join if already in the game', async () => {
+            const res = mockResponse()
+            await admin.firestore().collection('partidas').doc('ABC123').set({
+                chatIds: [12345]
+            });
+            const req = requestWithChatAndText(12345, '/join ABC123');
+            const mockBot = mockTelegramBot();
+
+            const functions = require('./index')
+            await functions.telegramBot(req, res);
+
+            expect(res.sendStatus).toHaveBeenCalledWith(200)
+            expect(mockBot.sendMessage).toHaveBeenCalledWith(12345, "Ya estás en la partida ABC123.")
         })
     })
 });
