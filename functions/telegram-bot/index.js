@@ -1,13 +1,12 @@
 const {GameCode} = require("./domain/game-code");
 const {FirebaseDatabase} = require("./infrastructure/firebase-database");
+const {TelegramBotCreator} = require("./infrastructure/telegram-bot-creator");
 require('dotenv').config();
 
 const db = FirebaseDatabase.create()
+const bot = TelegramBotCreator.create()
 
 exports.telegramBot = async (req, res) => {
-    const {TelegramBotCreator} = require("./infrastructure/telegram-bot-creator");
-    const bot = TelegramBotCreator.create()
-
     const { message } = req.body;
 
     if (message && message.text) {
