@@ -1,4 +1,5 @@
 const admin = require('firebase-admin');
+const {GameCode} = require("./domain/game-code");
 require('dotenv').config();
 
 if (admin.apps.length === 0) {
@@ -6,19 +7,6 @@ if (admin.apps.length === 0) {
 }
 
 const db = admin.firestore();
-
-// Genera un código de partida aleatorio
-function generateGameCode() {
-    const characters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    let code = '';
-
-    for (let i = 0; i < 8; i++) {
-        const randomIndex = Math.floor(Math.random() * characters.length);
-        code += characters[randomIndex];
-    }
-
-    return code;
-}
 
 exports.telegramBot = async (req, res) => {
     const {TelegramBotCreator} = require("./infrastructure/telegram-bot-creator");
@@ -58,7 +46,7 @@ exports.telegramBot = async (req, res) => {
         } else if (text === '/create') {
             await removeUserFromAllPartidas(chatId);
             // Crea una nueva partida con código aleatorio
-            const codigo = generateGameCode();
+            const codigo = GameCode.create()
 
             // Guarda el chatId del creador en la nueva partida
             await db.collection('partidas').doc(codigo).set({
