@@ -42,7 +42,8 @@ async function removeUserFromAllGames(chatId) {
 }
 
 async function findGamesByUser(chatId) {
-    return await db.collection(GAMES_COLLECTION).where('chatIds', 'array-contains', chatId).get();
+    const games = await db.collection(GAMES_COLLECTION).where('chatIds', 'array-contains', chatId).get();
+    return games.empty ? [] : games.docs.map(doc => doc.data())
 }
 
 exports.FirebaseDatabase = {

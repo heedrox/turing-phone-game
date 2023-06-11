@@ -42,16 +42,15 @@ exports.telegramBot = async (req, res) => {
             const joinLink = `https://t.me/turingphonebot?start=${code}`;
             await bot.sendMessage(userId, `Se ha creado una nueva partida. ¡Únete a ella! [${joinLink}](${joinLink})`, { parse_mode: 'Markdown' });
         } else {
-            const partidaQuerySnapshot = await db.findGamesByUser(userId)
+            const games = await db.findGamesByUser(userId)
 
-            if (partidaQuerySnapshot.empty) {
+            if (games.length === 0) {
                 await bot.sendMessage(
                     userId,
                     'No te has unido a ninguna partida. Usa el comando "/join CODIGO" para unirte a una, o "/create" para crear una nueva.'
                 );
             } else {
-                partidaQuerySnapshot.forEach((doc) => {
-                    const partidaData = doc.data();
+                games.forEach((partidaData) => {
                     const { chatIds } = partidaData;
 
                     // Envía el mensaje a todos los participantes de la partida
