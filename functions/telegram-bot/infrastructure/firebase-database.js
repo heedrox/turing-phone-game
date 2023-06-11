@@ -22,16 +22,18 @@ async function createEmptyGame(userId, code, player) {
         chatIds: [userId],
     });
     await db.doc(`${GAMES_COLLECTION}/${code}/players/${userId}`).set({
+        id: userId,
         name: player.name,
         emoji: player.emoji
     })
 }
 
-async function addUserToGame(chatId, code, player) {
+async function addUserToGame(userId, code, player) {
     await db.collection(GAMES_COLLECTION).doc(code).update({
-        chatIds: FieldValue.arrayUnion(chatId),
+        chatIds: FieldValue.arrayUnion(userId),
     });
-    await db.doc(`${GAMES_COLLECTION}/${code}/players/${chatId}`).set({
+    await db.doc(`${GAMES_COLLECTION}/${code}/players/${userId}`).set({
+        id: userId,
         name: player.name,
         emoji: player.emoji
     })
@@ -53,7 +55,15 @@ async function removeUserFromAllGames(chatId) {
 
 async function findGamesByUser(chatId) {
     const games = await db.collection(GAMES_COLLECTION).where('chatIds', 'array-contains', chatId).get();
-    return games.empty ? [] : games.docs.map(doc => ({ id: doc.id, ... doc.data() }))
+    if (games.empty) return []
+    return Promise.all(games.docs.map(async doc => {
+        const players = await db.collection(`${GAMES_COLLECTION}/${doc.id}/players`).get()
+        return {
+            id: doc.id,
+            players: players.empty ? [] : players.docs.map(d => d.data()),
+            ...doc.data()
+        }
+    }))
 }
 
 async function updateGame(code, params) {
@@ -61,7 +71,7 @@ async function updateGame(code, params) {
 }
 
 async function startGame(code) {
-    return await updateGame(code, { started: 1 })
+    return await updateGame(code, {started: 1})
 }
 
 exports.FirebaseDatabase = {

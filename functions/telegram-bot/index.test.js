@@ -76,8 +76,9 @@ describe('Telegram Bot', () => {
             const createdCode = games.docs[0].id
             const players = await admin.firestore().doc(`partidas/${createdCode}/players/12345`).get()
             expect(players.data()).toStrictEqual({
+                id: 12345,
                 name: expect.stringMatching(/^.{4,}$/),
-                emoji: expect.stringMatching(/^.{4,}$/)
+                emoji: expect.stringMatching(/^.{2,}$/)
             })
         })
         it('removes from previous game if already joined', async () => {
@@ -132,6 +133,7 @@ describe('Telegram Bot', () => {
             expect(game.data().chatIds).toContain(12345)
             const players = await admin.firestore().doc(`partidas/ABC123/players/12345`).get()
             expect(players.data()).toStrictEqual({
+                id: 12345,
                 name: expect.stringMatching(/^.{4,}$/),
                 emoji: expect.stringMatching(/^.{4,}$/)
             })
@@ -217,7 +219,6 @@ describe('Telegram Bot', () => {
             expect(game.data().started).not.toStrictEqual(1)
             expect(mockBot.sendMessage).toHaveBeenCalledWith(12345, 'Todavía no se ha unido ningún jugador. Invita al menos a un jugador con el código ABC123 para empezar.')
         })
-
     })
     describe('when writing any message', () => {
         it('does not broadcast message if not in a game', async () => {
@@ -231,7 +232,7 @@ describe('Telegram Bot', () => {
             expect(res.sendStatus).toHaveBeenCalledWith(200)
             expect(mockBot.sendMessage).toHaveBeenCalledWith(12345, 'No te has unido a ninguna partida. Usa el comando "/join CODIGO" para unirte a una, o "/create" para crear una nueva.')
         })
-        it('broadcasts message when in a game', async () => {
+        it('broadcasts message when in a non started game', async () => {
             const res = mockResponse()
             await admin.firestore().collection('partidas').doc('ABC123').set({
                 chatIds: [12345, 67890, 19283]
@@ -245,6 +246,37 @@ describe('Telegram Bot', () => {
             expect(res.sendStatus).toHaveBeenCalledWith(200)
             expect(mockBot.sendMessage).toHaveBeenCalledWith(67890, 'Hello!')
             expect(mockBot.sendMessage).toHaveBeenCalledWith(19283, 'Hello!')
+        })
+        it('broadcasts message with username and emoji when im started game', async () => {
+            const res = mockResponse()
+            await admin.firestore().collection('partidas').doc('ABC123').set({
+                chatIds: [12345, 67890, 19283],
+                started: 1
+            });
+            await admin.firestore().doc('partidas/ABC123/players/12345').set({
+                id: 12345,
+                name: 'name1',
+                emoji: 'emoji1'
+            })
+            await admin.firestore().doc('partidas/ABC123/players/67890').set({
+                id: 67890,
+                name: 'name2',
+                emoji: 'emoji2'
+            })
+            await admin.firestore().doc('partidas/ABC123/players/19283').set({
+                id: 19283,
+                name: 'name3',
+                emoji: 'emoji3'
+            })
+            const req = requestWithChatAndText(12345, 'Hello!');
+            const mockBot = mockTelegramBot();
+
+            const functions = require('./index')
+            await functions.telegramBot(req, res);
+
+            expect(res.sendStatus).toHaveBeenCalledWith(200)
+            expect(mockBot.sendMessage).toHaveBeenCalledWith(67890, '*emoji1 name1*: Hello!')
+            expect(mockBot.sendMessage).toHaveBeenCalledWith(19283, '*emoji1 name1*: Hello!')
         })
     })
 });
