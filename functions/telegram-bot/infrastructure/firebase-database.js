@@ -27,10 +27,14 @@ async function createEmptyGame(userId, code, player) {
     })
 }
 
-async function addUserToGame(chatId, code) {
+async function addUserToGame(chatId, code, player) {
     await db.collection(GAMES_COLLECTION).doc(code).update({
         chatIds: FieldValue.arrayUnion(chatId),
     });
+    await db.doc(`${GAMES_COLLECTION}/${code}/players/${chatId}`).set({
+        name: player.name,
+        emoji: player.emoji
+    })
 }
 
 async function removeUserFromAllGames(chatId) {
@@ -49,7 +53,15 @@ async function removeUserFromAllGames(chatId) {
 
 async function findGamesByUser(chatId) {
     const games = await db.collection(GAMES_COLLECTION).where('chatIds', 'array-contains', chatId).get();
-    return games.empty ? [] : games.docs.map(doc => doc.data())
+    return games.empty ? [] : games.docs.map(doc => ({ id: doc.id, ... doc.data() }))
+}
+
+async function updateGame(code, params) {
+    await db.doc(`${GAMES_COLLECTION}/${code}`).update(params)
+}
+
+async function startGame(code) {
+    return await updateGame(code, { started: 1 })
 }
 
 exports.FirebaseDatabase = {
@@ -62,6 +74,7 @@ exports.FirebaseDatabase = {
             addUserToGame,
             removeUserFromAllGames,
             findGamesByUser,
+            startGame,
         }
     }
 }

@@ -108,10 +108,8 @@ describe('Telegram Bot', () => {
             const req = requestWithChatAndText(12345, '/join ABC123');
             const mockBot = mockTelegramBot();
 
-
             const functions = require('./index')
             await functions.telegramBot(req, res);
-
 
             expect(res.sendStatus).toHaveBeenCalledWith(200)
             expect(mockBot.sendMessage).toHaveBeenCalledWith(12345, "El código ABC123 no es válido")
@@ -130,6 +128,13 @@ describe('Telegram Bot', () => {
 
             expect(res.sendStatus).toHaveBeenCalledWith(200)
             expect(mockBot.sendMessage).toHaveBeenCalledWith(12345, "Te has unido a la partida con código ABC123")
+            const game = await admin.firestore().doc('partidas/ABC123').get()
+            expect(game.data().chatIds).toContain(12345)
+            const players = await admin.firestore().doc(`partidas/ABC123/players/12345`).get()
+            expect(players.data()).toStrictEqual({
+                name: expect.stringMatching(/^.{4,}$/),
+                emoji: expect.stringMatching(/^.{4,}$/)
+            })
         });
 
         it('removes from another game if already in another game', async () => {
@@ -166,6 +171,36 @@ describe('Telegram Bot', () => {
         })
     })
 
+    describe('when starting', () => {
+        it('does not start game if user is not in game', async () => {
+            const res = mockResponse()
+            const req = requestWithChatAndText(12345, '/start');
+            const mockBot = mockTelegramBot();
+
+            const functions = require('./index')
+            await functions.telegramBot(req, res);
+
+            expect(res.sendStatus).toHaveBeenCalledWith(200)
+            expect(mockBot.sendMessage).toHaveBeenCalledWith(12345, 'No te has unido a ninguna partida. Usa el comando "/join CODIGO" para unirte a una, o "/create" para crear una nueva.')
+        })
+        it('starts game', async () => {
+            const res = mockResponse()
+            const req = requestWithChatAndText(12345, '/start');
+            const mockBot = mockTelegramBot();
+            await admin.firestore().collection('partidas').doc('ABC123').set({
+                chatIds: [12345, 67890, 19283]
+            });
+
+            const functions = require('./index')
+            await functions.telegramBot(req, res);
+
+            expect(res.sendStatus).toHaveBeenCalledWith(200)
+            const game = await admin.firestore().doc('partidas/ABC123').get()
+            expect(game.data().started).toStrictEqual(1)
+        })
+        xit('does not start game if not 2 players at least', () => { })
+
+    })
     describe('when writing any message', () => {
         it('does not broadcast message if not in a game', async () => {
             const res = mockResponse()

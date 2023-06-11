@@ -9,6 +9,7 @@ exports.Message = ({
             hasText: () => message && text,
             isJoin: () => text?.startsWith('/join'),
             isCreate: () => text?.startsWith('/create'),
+            isStart: () => text?.startsWith('/start'),
             joinCode: () => text?.split(' ')[1]
         }
     }
