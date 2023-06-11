@@ -14,6 +14,20 @@ function mockTelegramBot() {
     return mockBot;
 }
 
+function requestWithChatAndText(id, text) {
+    const req = {
+        body: {
+            message: {
+                chat: {
+                    id,
+                },
+                text
+            },
+        },
+    };
+    return req;
+}
+
 describe('Telegram Bot', () => {
 
     beforeEach(async () => {
@@ -28,16 +42,7 @@ describe('Telegram Bot', () => {
     describe('when creating new game', () => {
         it('creates a new game', async () => {
             const res = { sendStatus: jest.fn() }
-            const req = {
-                body: {
-                    message: {
-                        chat: {
-                            id: 12345,
-                        },
-                        text: '/create',
-                    },
-                },
-            };
+            const req = requestWithChatAndText(12345, '/create');
             const mockBot = mockTelegramBot();
 
             const functions = require('./index')
@@ -55,16 +60,7 @@ describe('Telegram Bot', () => {
                 chatIds: [12345]
             });
             const res = { sendStatus: jest.fn() }
-            const req = {
-                body: {
-                    message: {
-                        chat: {
-                            id: 12345,
-                        },
-                        text: '/create',
-                    },
-                },
-            };
+            const req = requestWithChatAndText(12345, '/create');
             const mockBot = mockTelegramBot();
 
             const functions = require('./index')
@@ -84,16 +80,7 @@ describe('Telegram Bot', () => {
     describe('when joining', () => {
         it('does not join if not valid game', async () => {
             const res = { sendStatus: jest.fn() }
-            const req = {
-                body: {
-                    message: {
-                        chat: {
-                            id: 12345,
-                        },
-                        text: '/join ABC123',
-                    },
-                },
-            };
+            const req = requestWithChatAndText(12345, '/join ABC123');
             const mockBot = mockTelegramBot();
 
 
@@ -111,16 +98,7 @@ describe('Telegram Bot', () => {
             await admin.firestore().collection('partidas').doc('ABC123').set({
                 chatIds: [98765]
             });
-            const req = {
-                body: {
-                    message: {
-                        chat: {
-                            id: 12345,
-                        },
-                        text: '/join ABC123',
-                    },
-                },
-            };
+            const req = requestWithChatAndText(12345, '/join ABC123');
             const mockBot = mockTelegramBot();
 
             const functions = require('./index')
