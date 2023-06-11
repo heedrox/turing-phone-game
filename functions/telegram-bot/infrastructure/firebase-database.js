@@ -6,8 +6,8 @@ let db
 function init() {
     if (admin.apps.length === 0) {
         admin.initializeApp();
-        db = admin.firestore();
     }
+    db = admin.firestore();
 }
 
 async function getGameByCode(code) {

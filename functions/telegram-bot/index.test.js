@@ -1,6 +1,5 @@
 // const admin = require('firebase-admin');
 const admin = require('firebase-admin');
-const functions = require("./index");
 require('dotenv').config();
 
 if (admin.apps.length === 0) {
