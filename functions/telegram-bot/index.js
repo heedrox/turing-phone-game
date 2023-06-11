@@ -1,51 +1,52 @@
 const {GameCode} = require("./domain/game-code");
 const {FirebaseDatabase} = require("./infrastructure/firebase-database");
 const {TelegramBotCreator} = require("./infrastructure/telegram-bot-creator");
+const {Message} = require("./domain/message");
 require('dotenv').config();
 
 const db = FirebaseDatabase.create()
 const bot = TelegramBotCreator.create()
 
 exports.telegramBot = async (req, res) => {
-    const { message } = req.body;
+    const message = Message.fromBody(req.body)
 
-    if (message && message.text) {
-        const chatId = message.chat.id;
-        const text = message.text;
+    if (message && message.text()) {
+        const userId = message.userId()
+        const text = message.text()
 
-        if (text.startsWith('/join')) {
-            const code = text.split(' ')[1];
+        if (message.isJoin()) {
+            const code = message.joinCode()
 
             // Verifica si el código existe en Firestore
             const partidaData  = await db.getGameByCode(code)
             if (partidaData) {
                 const chatIds = partidaData.chatIds || [];
 
-                if (chatIds.includes(chatId)) {
-                    await bot.sendMessage(chatId, `Ya estás en la partida ${code}.`);
+                if (chatIds.includes(userId)) {
+                    await bot.sendMessage(userId, `Ya estás en la partida ${code}.`);
                 } else {
-                    await db.removeUserFromAllGames(chatId)
-                    await db.addUserToGame(chatId, code)
-                    await bot.sendMessage(chatId, `Te has unido a la partida con código ${code}`);
+                    await db.removeUserFromAllGames(userId)
+                    await db.addUserToGame(userId, code)
+                    await bot.sendMessage(userId, `Te has unido a la partida con código ${code}`);
                 }
             } else {
-                await bot.sendMessage(chatId, `El código ${code} no es válido`);
+                await bot.sendMessage(userId, `El código ${code} no es válido`);
             }
-        } else if (text === '/create') {
-            await db.removeUserFromAllGames(chatId);
+        } else if (message.isCreate()) {
+            await db.removeUserFromAllGames(userId);
             // Crea una nueva partida con código aleatorio
             const code = GameCode.create()
 
-            await db.createEmptyGame(chatId, code)
+            await db.createEmptyGame(userId, code)
 
             const joinLink = `https://t.me/turingphonebot?start=${code}`;
-            await bot.sendMessage(chatId, `Se ha creado una nueva partida. ¡Únete a ella! [${joinLink}](${joinLink})`, { parse_mode: 'Markdown' });
+            await bot.sendMessage(userId, `Se ha creado una nueva partida. ¡Únete a ella! [${joinLink}](${joinLink})`, { parse_mode: 'Markdown' });
         } else {
-            const partidaQuerySnapshot = await db.findGamesByUser(chatId)
+            const partidaQuerySnapshot = await db.findGamesByUser(userId)
 
             if (partidaQuerySnapshot.empty) {
                 await bot.sendMessage(
-                    chatId,
+                    userId,
                     'No te has unido a ninguna partida. Usa el comando "/join CODIGO" para unirte a una, o "/create" para crear una nueva.'
                 );
             } else {
@@ -55,7 +56,7 @@ exports.telegramBot = async (req, res) => {
 
                     // Envía el mensaje a todos los participantes de la partida
                     chatIds.forEach(async (participantChatId) => {
-                        if (participantChatId !== chatId) {
+                        if (participantChatId !== userId) {
                             await bot.sendMessage(participantChatId, text);
                         }
                     });
