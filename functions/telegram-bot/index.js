@@ -17,17 +17,12 @@ const broadcastCommand = Broadcast.create(db, bot)
 exports.telegramBot = async (req, res) => {
     const message = Message.fromBody(req.body)
 
-    if (message.hasText()) {
-        const userId = message.userId()
-        const text = message.text()
-
-        if (message.isJoin()) {
-            await joinCommand.execute(message)
-        } else if (message.isCreate()) {
-            await createGameCommand.execute(message)
-        } else {
-            await broadcastCommand.execute(message)
-        }
+    if (message.isJoin()) {
+        await joinCommand.execute(message)
+    } else if (message.isCreate()) {
+        await createGameCommand.execute(message)
+    } else if (message.hasText()) {
+        await broadcastCommand.execute(message)
     }
 
     res.sendStatus(200);

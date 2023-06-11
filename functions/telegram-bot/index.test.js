@@ -1,5 +1,6 @@
 // const admin = require('firebase-admin');
 const admin = require('firebase-admin');
+const functions = require("./index");
 require('dotenv').config();
 
 if (admin.apps.length === 0) {
@@ -43,6 +44,17 @@ describe('Telegram Bot', () => {
         const snapshot = await admin.firestore().collection('partidas').get()
         await Promise.all(snapshot.docs.map(doc => doc.ref.delete()));
         jest.resetModules()
+    })
+
+    it('returns gracefully when no message', async () => {
+        const res = mockResponse()
+        const req = { }
+        const mockBot = mockTelegramBot();
+
+        const functions = require('./index')
+        await functions.telegramBot(req, res);
+
+        expect(res.sendStatus).toHaveBeenCalledWith(200)
     })
     describe('when creating new game', () => {
         it('creates a new game', async () => {
