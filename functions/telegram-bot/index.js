@@ -10,7 +10,7 @@ const bot = TelegramBotCreator.create()
 exports.telegramBot = async (req, res) => {
     const message = Message.fromBody(req.body)
 
-    if (message && message.text()) {
+    if (message.hasText()) {
         const userId = message.userId()
         const text = message.text()
 
