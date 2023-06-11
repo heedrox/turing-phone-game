@@ -198,7 +198,22 @@ describe('Telegram Bot', () => {
             const game = await admin.firestore().doc('partidas/ABC123').get()
             expect(game.data().started).toStrictEqual(1)
         })
-        xit('does not start game if not 2 players at least', () => { })
+        it('does not start game if not 2 players at least', async () => {
+            const res = mockResponse()
+            const req = requestWithChatAndText(12345, '/start');
+            const mockBot = mockTelegramBot();
+            await admin.firestore().collection('partidas').doc('ABC123').set({
+                chatIds: [12345]
+            });
+
+            const functions = require('./index')
+            await functions.telegramBot(req, res);
+
+            expect(res.sendStatus).toHaveBeenCalledWith(200)
+            const game = await admin.firestore().doc('partidas/ABC123').get()
+            expect(game.data().started).not.toStrictEqual(1)
+            expect(mockBot.sendMessage).toHaveBeenCalledWith(12345, 'Todavía no se ha unido ningún jugador. Invita al menos a un jugador con el código ABC123 para empezar.')
+        })
 
     })
     describe('when writing any message', () => {
