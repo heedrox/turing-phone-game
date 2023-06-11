@@ -1,8 +1,11 @@
 // const admin = require('firebase-admin');
 const admin = require('firebase-admin');
+const functions = require("./index");
 require('dotenv').config();
-admin.initializeApp();
 
+if (admin.apps.length === 0) {
+    admin.initializeApp();
+}
 
 function mockTelegramBot() {
     const mockBot = {
@@ -93,7 +96,6 @@ describe('Telegram Bot', () => {
 
             expect(res.sendStatus).toHaveBeenCalledWith(200)
             expect(mockBot.sendMessage).toHaveBeenCalledWith(12345, "El código ABC123 no es válido")
-
         });
 
         it('joins if valid game', async () => {
@@ -142,6 +144,35 @@ describe('Telegram Bot', () => {
 
             expect(res.sendStatus).toHaveBeenCalledWith(200)
             expect(mockBot.sendMessage).toHaveBeenCalledWith(12345, "Ya estás en la partida ABC123.")
+        })
+    })
+
+    describe('when writing any message', () => {
+        it('does not broadcast message if not in a game', async () => {
+            const res = mockResponse()
+            const req = requestWithChatAndText(12345, 'Hello!');
+            const mockBot = mockTelegramBot();
+
+            const functions = require('./index')
+            await functions.telegramBot(req, res);
+
+            expect(res.sendStatus).toHaveBeenCalledWith(200)
+            expect(mockBot.sendMessage).toHaveBeenCalledWith(12345, 'No te has unido a ninguna partida. Usa el comando "/join CODIGO" para unirte a una, o "/create" para crear una nueva.')
+        })
+        it('broadcasts message when in a game', async () => {
+            const res = mockResponse()
+            await admin.firestore().collection('partidas').doc('ABC123').set({
+                chatIds: [12345, 67890, 19283]
+            });
+            const req = requestWithChatAndText(12345, 'Hello!');
+            const mockBot = mockTelegramBot();
+
+            const functions = require('./index')
+            await functions.telegramBot(req, res);
+
+            expect(res.sendStatus).toHaveBeenCalledWith(200)
+            expect(mockBot.sendMessage).toHaveBeenCalledWith(67890, 'Hello!')
+            expect(mockBot.sendMessage).toHaveBeenCalledWith(19283, 'Hello!')
         })
     })
 });
