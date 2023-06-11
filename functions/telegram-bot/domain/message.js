@@ -7,9 +7,9 @@ exports.Message = ({
             userId: () => id,
             text: () => text,
             hasText: () => message && text,
-            isJoin: () => text?.startsWith('/join'),
+            isJoin: () => text?.startsWith('/join') || text?.startsWith('/start'),
             isCreate: () => text?.startsWith('/create'),
-            isStart: () => text?.startsWith('/start'),
+            isGo: () => text?.startsWith('/go'),
             joinCode: () => text?.split(' ')[1]
         }
     }

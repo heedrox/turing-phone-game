@@ -1,4 +1,4 @@
-exports.Start = ({
+exports.Go = ({
     create: (db, bot) => {
 
         async function execute(message) {

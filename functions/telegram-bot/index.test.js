@@ -173,10 +173,10 @@ describe('Telegram Bot', () => {
         })
     })
 
-    describe('when starting', () => {
+    describe('when executing go', () => {
         it('does not start game if user is not in game', async () => {
             const res = mockResponse()
-            const req = requestWithChatAndText(12345, '/start');
+            const req = requestWithChatAndText(12345, '/go');
             const mockBot = mockTelegramBot();
 
             const functions = require('./index')
@@ -187,7 +187,7 @@ describe('Telegram Bot', () => {
         })
         it('starts game', async () => {
             const res = mockResponse()
-            const req = requestWithChatAndText(12345, '/start');
+            const req = requestWithChatAndText(12345, '/go');
             const mockBot = mockTelegramBot();
             await admin.firestore().collection('partidas').doc('ABC123').set({
                 chatIds: [12345, 67890, 19283]
@@ -205,7 +205,7 @@ describe('Telegram Bot', () => {
         })
         it('does not start game if not 2 players at least', async () => {
             const res = mockResponse()
-            const req = requestWithChatAndText(12345, '/start');
+            const req = requestWithChatAndText(12345, '/go');
             const mockBot = mockTelegramBot();
             await admin.firestore().collection('partidas').doc('ABC123').set({
                 chatIds: [12345]
