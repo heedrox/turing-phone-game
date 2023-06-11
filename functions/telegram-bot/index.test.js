@@ -244,8 +244,8 @@ describe('Telegram Bot', () => {
             await functions.telegramBot(req, res);
 
             expect(res.sendStatus).toHaveBeenCalledWith(200)
-            expect(mockBot.sendMessage).toHaveBeenCalledWith(67890, 'Hello!')
-            expect(mockBot.sendMessage).toHaveBeenCalledWith(19283, 'Hello!')
+            expect(mockBot.sendMessage).toHaveBeenCalledWith(67890, 'Hello!', { parse_mode: 'HTML' })
+            expect(mockBot.sendMessage).toHaveBeenCalledWith(19283, 'Hello!', { parse_mode: 'HTML' })
         })
         it('broadcasts message with username and emoji when im started game', async () => {
             const res = mockResponse()
@@ -275,8 +275,8 @@ describe('Telegram Bot', () => {
             await functions.telegramBot(req, res);
 
             expect(res.sendStatus).toHaveBeenCalledWith(200)
-            expect(mockBot.sendMessage).toHaveBeenCalledWith(67890, '*emoji1 name1*: Hello!')
-            expect(mockBot.sendMessage).toHaveBeenCalledWith(19283, '*emoji1 name1*: Hello!')
+            expect(mockBot.sendMessage).toHaveBeenCalledWith(67890, '<b>emoji1 name1</b>: Hello!', { parse_mode: 'HTML' })
+            expect(mockBot.sendMessage).toHaveBeenCalledWith(19283, '<b>emoji1 name1</b>: Hello!', { parse_mode: 'HTML' })
         })
     })
 });

@@ -1,4 +1,4 @@
-const addPlayerName = (player, text) => `*${player.emoji} ${player.name}*: ${text}`
+const addPlayerName = (player, text) => `<b>${player.emoji} ${player.name}</b>: ${text}`
 
 exports.Broadcast = ({
     create: (db, bot) => {
@@ -19,7 +19,7 @@ exports.Broadcast = ({
             const sendingPromises = games
                 .flatMap(game => game.chatIds)
                 .filter(participantId => participantId !== userId)
-                .map(id => bot.sendMessage(id, isStarted ? addPlayerName(player, text) : text))
+                .map(id => bot.sendMessage(id, isStarted ? addPlayerName(player, text) : text, {parse_mode: 'HTML'}) )
             await Promise.all(sendingPromises)
         }
         return ({
