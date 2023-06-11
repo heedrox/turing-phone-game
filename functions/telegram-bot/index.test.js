@@ -71,6 +71,14 @@ describe('Telegram Bot', () => {
                 expect.stringMatching(/^Se ha creado una nueva partida/),
                 { parse_mode: 'Markdown' }
             )
+            const games = await admin.firestore().collection('partidas').get()
+            expect(games.docs[0].data().chatIds).toContain(12345)
+            const createdCode = games.docs[0].id
+            const players = await admin.firestore().doc(`partidas/${createdCode}/players/12345`).get()
+            expect(players.data()).toStrictEqual({
+                name: expect.stringMatching(/^.{4,}$/),
+                emoji: expect.stringMatching(/^.{4,}$/)
+            })
         })
         it('removes from previous game if already joined', async () => {
             await admin.firestore().collection('partidas').doc('CDE456').set({

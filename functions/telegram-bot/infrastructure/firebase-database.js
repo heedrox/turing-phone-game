@@ -1,4 +1,6 @@
 const admin = require('firebase-admin');
+const
+    {FieldValue} = require('firebase-admin/firestore');
 
 const GAMES_COLLECTION = 'partidas'
 let db
@@ -15,15 +17,19 @@ async function getGameByCode(code) {
     return snapshot.exists ? snapshot.data() : null
 }
 
-async function createEmptyGame(chatId, code) {
+async function createEmptyGame(userId, code, player) {
     await db.collection(GAMES_COLLECTION).doc(code).set({
-        chatIds: [chatId]
+        chatIds: [userId],
     });
+    await db.doc(`${GAMES_COLLECTION}/${code}/players/${userId}`).set({
+        name: player.name,
+        emoji: player.emoji
+    })
 }
 
 async function addUserToGame(chatId, code) {
     await db.collection(GAMES_COLLECTION).doc(code).update({
-        chatIds: admin.firestore.FieldValue.arrayUnion(chatId),
+        chatIds: FieldValue.arrayUnion(chatId),
     });
 }
 

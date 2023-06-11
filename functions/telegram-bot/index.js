@@ -17,6 +17,7 @@ const broadcastCommand = Broadcast.create(db, bot)
 exports.telegramBot = async (req, res) => {
     const message = Message.fromBody(req.body)
 
+    console.log('Received message', message.text())
     if (message.isJoin()) {
         await joinCommand.execute(message)
     } else if (message.isCreate()) {
