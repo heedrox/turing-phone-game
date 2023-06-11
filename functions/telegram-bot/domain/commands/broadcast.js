@@ -12,16 +12,11 @@ exports.Broadcast = ({
                     'No te has unido a ninguna partida. Usa el comando "/join CODIGO" para unirte a una, o "/create" para crear una nueva.'
                 );
             } else {
-                games.forEach((partidaData) => {
-                    const {chatIds} = partidaData;
-
-                    // Envía el mensaje a todos los participantes de la partida
-                    chatIds.forEach(async (participantChatId) => {
-                        if (participantChatId !== userId) {
-                            await bot.sendMessage(participantChatId, text);
-                        }
-                    });
-                });
+                const sendingPromises = games
+                    .flatMap(game => game.chatIds)
+                    .filter(participantId => participantId !== userId)
+                    .map(id => bot.sendMessage(id, text))
+                await Promise.all(sendingPromises)
             }
         }
         return ({
