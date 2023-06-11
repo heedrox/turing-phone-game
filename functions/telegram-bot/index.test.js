@@ -197,6 +197,9 @@ describe('Telegram Bot', () => {
             expect(res.sendStatus).toHaveBeenCalledWith(200)
             const game = await admin.firestore().doc('partidas/ABC123').get()
             expect(game.data().started).toStrictEqual(1)
+            expect(mockBot.sendMessage).toHaveBeenCalledWith(12345, '¡Empieza la partida, suerte!')
+            expect(mockBot.sendMessage).toHaveBeenCalledWith(67890, '¡Empieza la partida, suerte!')
+            expect(mockBot.sendMessage).toHaveBeenCalledWith(19283, '¡Empieza la partida, suerte!')
         })
         it('does not start game if not 2 players at least', async () => {
             const res = mockResponse()

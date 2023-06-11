@@ -18,6 +18,7 @@ exports.Start = ({
                 );
             }
             await db.startGame(code)
+            await Promise.all(games[0].chatIds.map(chatId => bot.sendMessage(chatId, '¡Empieza la partida, suerte!')))
         }
         return ({
             execute
