@@ -1,9 +1,11 @@
 const addPlayerName = (player, text) => `<b>${player.emoji} ${player.name}</b>: ${text}`
 const { DelayedExecutor } = require('../../infrastructure/delayed-executor')
+const { GptMessageGenerator } = require('../../infrastructure/gpt-message-generator')
 const { RandomNumberGenerator } = require('../../infrastructure/random-number-generator')
 
 const delayedExecutor = DelayedExecutor.create()
 const randomGenerator = RandomNumberGenerator.create()
+const gptMessageGenerator = GptMessageGenerator.create()
 
 exports.Broadcast = ({
     create: (db, bot) => {
@@ -32,17 +34,17 @@ exports.Broadcast = ({
                 .map(id => bot.sendMessage(id, isStarted ? addPlayerName(player, text) : text, {parse_mode: 'HTML'}) )
             await Promise.all(sendingPromises)
 
-            if (isStarted) {
-                const chanceAnswer = randomGenerator.get()
-                if (chanceAnswer>=0.5) {
-                    const timeDelay = randomGenerator.get() * 60000
-                    await delayedExecutor.execute(() => {
-                        const gptAnswerPromises = games
-                        .flatMap(game => game.chatIds)
-                        .map(id => bot.sendMessage(id, isStarted ? addPlayerName(aiPlayer, 'Message from GPT!') : text, {parse_mode: 'HTML'}) )
-                        return Promise.all(gptAnswerPromises)
-                    }, timeDelay)        
-                }
+            const chanceAnswer = randomGenerator.get()
+
+            if (isStarted && chanceAnswer >= 0.5) {
+                const message = gptMessageGenerator.generate()
+                const timeDelay = randomGenerator.get() * 60000
+                await delayedExecutor.execute(() => {
+                    const gptAnswerPromises = games
+                    .flatMap(game => game.chatIds)
+                    .map(id => bot.sendMessage(id, addPlayerName(aiPlayer, message), {parse_mode: 'HTML'}) )
+                    return Promise.all(gptAnswerPromises)
+                }, timeDelay)        
             }
         }
         return ({
