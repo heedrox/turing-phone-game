@@ -19,12 +19,22 @@ function mockTelegramBot() {
 
 function mockRandomNumberGenerator(number) {
     const mockRandomNumberGenerator = {
-        sendMessage: jest.fn()
+        get: jest.fn()
     }
     jest.mock('./infrastructure/random-number-generator', () => ({
         RandomNumberGenerator: { create: () => mockRandomNumberGenerator }
     }))
     return mockRandomNumberGenerator
+}
+
+function mockDelayedExecutor() {
+    const mockExecutor = {
+        execute: (fn) => fn()
+    }
+    jest.mock('./infrastructure/delayed-executor', () => ({
+        DelayedExecutor: { create: () => mockExecutor }
+    }))
+    return mockExecutor
 }
 function requestWithChatAndText(id, text) {
     return {
@@ -284,6 +294,7 @@ describe('Telegram Bot', () => {
                     aiName: 'name-ai',
                     aiEmoji: 'emoji-ai'
                 })
+                mockDelayedExecutor()
             })
             it('broadcasts message with username and emoji', async () => {
                 const res = mockResponse()
@@ -298,10 +309,11 @@ describe('Telegram Bot', () => {
                 expect(mockBot.sendMessage).toHaveBeenCalledWith(19283, '<b>emoji1 name1</b>: Hello!', { parse_mode: 'HTML' })
             })
             it('gets an answer from GPT if greater than 50% chance', async () => {
+
                 const res = mockResponse()
                 const req = requestWithChatAndText(12345, 'Hello!');
                 const mockBot = mockTelegramBot();
-                const mockRandom = mockRandomNumberGenerator(0.75);
+                mockRandomNumberGenerator(0.75);
     
                 const functions = require('./index')
                 await functions.telegramBot(req, res);
@@ -310,7 +322,6 @@ describe('Telegram Bot', () => {
                 expect(mockBot.sendMessage).toHaveBeenCalledWith(67890, '<b>emoji-ai name-ai</b>: Message from GPT!', { parse_mode: 'HTML' })
                 expect(mockBot.sendMessage).toHaveBeenCalledWith(19283, '<b>emoji-ai name-ai</b>: Message from GPT!', { parse_mode: 'HTML' })
                 expect(mockBot.sendMessage).toHaveBeenCalledWith(12345, '<b>emoji-ai name-ai</b>: Message from GPT!', { parse_mode: 'HTML' })
-
             })    
         })
     })

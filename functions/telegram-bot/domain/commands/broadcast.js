@@ -1,4 +1,9 @@
 const addPlayerName = (player, text) => `<b>${player.emoji} ${player.name}</b>: ${text}`
+const { DelayedExecutor } = require('../../infrastructure/delayed-executor')
+const { RandomNumberGenerator } = require('../../infrastructure/random-number-generator')
+
+const delayedExecutor = DelayedExecutor.create()
+const randomGenerator = RandomNumberGenerator.create()
 
 exports.Broadcast = ({
     create: (db, bot) => {
@@ -27,10 +32,16 @@ exports.Broadcast = ({
                 .map(id => bot.sendMessage(id, isStarted ? addPlayerName(player, text) : text, {parse_mode: 'HTML'}) )
             await Promise.all(sendingPromises)
 
-            const gptAnswerPromises = games
-                .flatMap(game => game.chatIds)
-                .map(id => bot.sendMessage(id, isStarted ? addPlayerName(aiPlayer, 'Message from GPT!') : text, {parse_mode: 'HTML'}) )
-            await Promise.all(gptAnswerPromises)
+            if (isStarted) {
+                console.log('generator', randomGenerator)
+                const timeDelay = randomGenerator.get() * 60000
+                await delayedExecutor.execute(() => {
+                    const gptAnswerPromises = games
+                    .flatMap(game => game.chatIds)
+                    .map(id => bot.sendMessage(id, isStarted ? addPlayerName(aiPlayer, 'Message from GPT!') : text, {parse_mode: 'HTML'}) )
+                    return Promise.all(gptAnswerPromises)
+                }, timeDelay)    
+            }
         }
         return ({
             execute
