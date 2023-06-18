@@ -77,7 +77,7 @@ async function startGame(code) {
 }
 
 async function getPreviousMessages(code) {
-    const messages = await db.collection(`${GAMES_COLLECTION}/${code}/messages`).get()
+    const messages = await db.collection(`${GAMES_COLLECTION}/${code}/messages`).orderBy("created", "asc").get()
     if (messages.empty) return []
     return messages.docs.map((m) => ({
         content: 'x',

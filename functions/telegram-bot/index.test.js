@@ -353,7 +353,6 @@ describe('Telegram Bot', () => {
                 })
             }) 
             it('does not get an answer from GPT if less than 50% chance', async () => {
-
                 const res = mockResponse()
                 const req = requestWithChatAndText(12345, 'Hello!');
                 const mockBot = mockTelegramBot();
