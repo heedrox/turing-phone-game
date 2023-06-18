@@ -17,9 +17,11 @@ async function getGameByCode(code) {
     return snapshot.exists ? snapshot.data() : null
 }
 
-async function createEmptyGame(userId, code, player) {
+async function createEmptyGame(userId, code, player, aiPlayer) {
     await db.collection(GAMES_COLLECTION).doc(code).set({
         chatIds: [userId],
+        aiName: aiPlayer.name,
+        aiEmoji: aiPlayer.emoji
     });
     await db.doc(`${GAMES_COLLECTION}/${code}/players/${userId}`).set({
         id: userId,

@@ -81,7 +81,8 @@ describe('Telegram Bot', () => {
                 { parse_mode: 'Markdown' }
             )
             const games = await admin.firestore().collection('partidas').get()
-            expect(games.docs[0].data().chatIds).toContain(12345)
+            const game = games.docs[0].data()
+            expect(game.chatIds).toContain(12345)
             const createdCode = games.docs[0].id
             const players = await admin.firestore().doc(`partidas/${createdCode}/players/12345`).get()
             expect(players.data()).toStrictEqual({
@@ -89,6 +90,8 @@ describe('Telegram Bot', () => {
                 name: expect.stringMatching(/^.{4,}$/),
                 emoji: expect.stringMatching(/^.{2,}$/)
             })
+            expect(game.aiName).toBeDefined()
+            expect(game.aiEmoji).toBeDefined()
         })
         it('removes from previous game if already joined', async () => {
             await admin.firestore().collection('partidas').doc('CDE456').set({
@@ -277,6 +280,10 @@ describe('Telegram Bot', () => {
                     name: 'name3',
                     emoji: 'emoji3'
                 })
+                await admin.firestore().doc('partidas/ABC123').update({
+                    aiName: 'name-ai',
+                    aiEmoji: 'emoji-ai'
+                })
             })
             it('broadcasts message with username and emoji', async () => {
                 const res = mockResponse()
@@ -300,8 +307,10 @@ describe('Telegram Bot', () => {
                 await functions.telegramBot(req, res);
     
                 expect(res.sendStatus).toHaveBeenCalledWith(200)
-                expect(mockBot.sendMessage).toHaveBeenCalledWith(67890, '<b>emoji1 name1</b>: Hello!', { parse_mode: 'HTML' })
-                expect(mockBot.sendMessage).toHaveBeenCalledWith(19283, '<b>emoji1 name1</b>: Hello!', { parse_mode: 'HTML' })    
+                expect(mockBot.sendMessage).toHaveBeenCalledWith(67890, '<b>emoji-ai name-ai</b>: Message from GPT!', { parse_mode: 'HTML' })
+                expect(mockBot.sendMessage).toHaveBeenCalledWith(19283, '<b>emoji-ai name-ai</b>: Message from GPT!', { parse_mode: 'HTML' })
+                expect(mockBot.sendMessage).toHaveBeenCalledWith(12345, '<b>emoji-ai name-ai</b>: Message from GPT!', { parse_mode: 'HTML' })
+
             })    
         })
     })
