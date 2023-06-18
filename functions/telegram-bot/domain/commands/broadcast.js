@@ -41,7 +41,8 @@ exports.Broadcast = ({
             await db.addPreviousMessage(gameCode, player, text)                        
             const chanceAnswer = randomGenerator.get()
             if (chanceAnswer >= 0.5) {
-                const previousMessages = db.getPreviousMessages(gameCode)
+                const previousMessages = await db.getPreviousMessages(gameCode)
+                console.log('previousMessages', gameCode, previousMessages)
                 const message = await gptMessageGenerator.generate(previousMessages)
                 const timeDelay = randomGenerator.get() * 60000
                 await delayedExecutor.execute(async () => {

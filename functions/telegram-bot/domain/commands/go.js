@@ -1,6 +1,8 @@
-exports.Go = ({
-    create: (db, bot) => {
+const { GptThemeGenerator } = require("../../infrastructure/gpt-theme-generator");
 
+exports.Go = ({    
+    create: (db, bot) => {
+        const themeGenerator = GptThemeGenerator.create()
         async function execute(message) {
             const userId = message.userId()
             const games = await db.findGamesByUser(userId)
@@ -18,7 +20,8 @@ exports.Go = ({
                 );
             }
             await db.startGame(code)
-            await Promise.all(games[0].chatIds.map(chatId => bot.sendMessage(chatId, '¡Empieza la partida, suerte!')))
+            const theme = await themeGenerator.generate()
+            await Promise.all(games[0].chatIds.map(chatId => bot.sendMessage(chatId, `¡Empieza la partida, suerte! ${theme}`)))
         }
         return ({
             execute

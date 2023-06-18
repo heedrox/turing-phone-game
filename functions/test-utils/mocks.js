@@ -37,6 +37,15 @@ function mockGptMessageGenerator(message) {
     }))
 }
 
+function mockGptThemeGenerator(message) {
+    const mockGenerator = {
+        generate: async () => message
+    }
+    jest.mock('../telegram-bot/infrastructure/gpt-theme-generator', () => ({
+        GptThemeGenerator: { create: () => mockGenerator }
+    }))
+}
+
 function requestWithChatAndText(id, text) {
     return {
         body: {
@@ -60,5 +69,6 @@ module.exports = {
     mockGptMessageGenerator,
     mockRandomNumberGenerator,
     mockResponse,
-    requestWithChatAndText
+    requestWithChatAndText,
+    mockGptThemeGenerator
 }

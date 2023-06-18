@@ -1,6 +1,6 @@
 const admin = require('firebase-admin');
 const { removeDatabase } = require('../test-utils/remove-database')
-const { mockDelayedExecutor, mockGptMessageGenerator, mockRandomNumberGenerator, mockResponse, mockTelegramBot, requestWithChatAndText } = require('../test-utils/mocks')
+const { mockDelayedExecutor, mockGptMessageGenerator, mockRandomNumberGenerator, mockResponse, mockTelegramBot, requestWithChatAndText, mockGptThemeGenerator } = require('../test-utils/mocks')
 
 require('dotenv').config();
 
@@ -164,13 +164,14 @@ describe('Telegram Bot', () => {
             expect(res.sendStatus).toHaveBeenCalledWith(200)
             expect(mockBot.sendMessage).toHaveBeenCalledWith(12345, 'No te has unido a ninguna partida. Usa el comando "/join CODIGO" para unirte a una, o "/create" para crear una nueva.')
         })
-        it('starts game', async () => {
+        it('starts game, suggesting a theme', async () => {
             const res = mockResponse()
             const req = requestWithChatAndText(12345, '/go');
             const mockBot = mockTelegramBot();
             await admin.firestore().collection('partidas').doc('ABC123').set({
                 chatIds: [12345, 67890, 19283]
             });
+            mockGptThemeGenerator('Contexto: Pregunta de opinión.')
 
             const functions = require('./index')
             await functions.telegramBot(req, res);
@@ -178,9 +179,9 @@ describe('Telegram Bot', () => {
             expect(res.sendStatus).toHaveBeenCalledWith(200)
             const game = await admin.firestore().doc('partidas/ABC123').get()
             expect(game.data().started).toStrictEqual(1)
-            expect(mockBot.sendMessage).toHaveBeenCalledWith(12345, '¡Empieza la partida, suerte!')
-            expect(mockBot.sendMessage).toHaveBeenCalledWith(67890, '¡Empieza la partida, suerte!')
-            expect(mockBot.sendMessage).toHaveBeenCalledWith(19283, '¡Empieza la partida, suerte!')
+            expect(mockBot.sendMessage).toHaveBeenCalledWith(12345, '¡Empieza la partida, suerte! Contexto: Pregunta de opinión.')
+            expect(mockBot.sendMessage).toHaveBeenCalledWith(67890, '¡Empieza la partida, suerte! Contexto: Pregunta de opinión.')
+            expect(mockBot.sendMessage).toHaveBeenCalledWith(19283, '¡Empieza la partida, suerte! Contexto: Pregunta de opinión.')
         })
         it('does not start game if not 2 players at least', async () => {
             const res = mockResponse()
