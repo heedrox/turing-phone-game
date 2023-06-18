@@ -2,13 +2,17 @@ const addPlayerName = (player, text) => `<b>${player.emoji} ${player.name}</b>: 
 const { DelayedExecutor } = require('../../infrastructure/delayed-executor')
 const { GptMessageGenerator } = require('../../infrastructure/gpt-message-generator')
 const { RandomNumberGenerator } = require('../../infrastructure/random-number-generator')
+const { AiRandomAnswerer } = require('../ia-random-answerer')
 
 const delayedExecutor = DelayedExecutor.create()
 const randomGenerator = RandomNumberGenerator.create()
 const gptMessageGenerator = GptMessageGenerator.create()
 
+
 exports.Broadcast = ({
     create: (db, bot) => {
+        const aiRandomAnswerer = AiRandomAnswerer.create(db, bot)
+
         async function execute(message) {
             const userId = message.userId()
             const text = message.text()
@@ -27,11 +31,6 @@ exports.Broadcast = ({
             }
             const isStarted = games[0].started === 1
             const player = games[0].players.find(player => player.id === userId)
-            const aiPlayer = {
-                id: 'ai',
-                name: games[0].aiName,
-                emoji: games[0].aiEmoji
-            };
             const gameCode = games[0].id
             const numPlayers = games[0].chatIds.length
 
@@ -47,19 +46,7 @@ exports.Broadcast = ({
             }
             
             await db.addPreviousMessage(gameCode, player, text)                        
-            const chanceAnswer = randomGenerator.get()
-            if (chanceAnswer >= 0.5) {
-                const previousMessages = await db.getPreviousMessages(gameCode)
-                const message = await gptMessageGenerator.generate(previousMessages)
-                const timeDelay = randomGenerator.get() * 60000
-                await delayedExecutor.execute(async () => {
-                    const gptAnswerPromises = games
-                    .flatMap(game => game.chatIds)
-                    .map(id => bot.sendMessage(id, addPlayerName(aiPlayer, message), {parse_mode: 'HTML'}) )
-                    await Promise.all(gptAnswerPromises)
-                    await db.addPreviousMessage(gameCode, aiPlayer, message)  
-                }, timeDelay)        
-            }
+            await aiRandomAnswerer.answer(gameCode)
         }
         return ({
             execute

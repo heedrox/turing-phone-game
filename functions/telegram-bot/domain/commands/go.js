@@ -1,8 +1,11 @@
 const { GptThemeGenerator } = require("../../infrastructure/gpt-theme-generator");
+const { AiRandomAnswerer } = require('../ia-random-answerer')
 
 exports.Go = ({    
     create: (db, bot) => {
         const themeGenerator = GptThemeGenerator.create()
+        const aiRandomAnswerer = AiRandomAnswerer.create(db, bot)
+
         async function execute(message) {
             const userId = message.userId()
             const games = await db.findGamesByUser(userId)
@@ -28,6 +31,7 @@ exports.Go = ({
                 emoji: null                
             }, startMessage)  
             await Promise.all(games[0].chatIds.map(chatId => bot.sendMessage(chatId, startMessage)))
+            await aiRandomAnswerer.answer(code)
         }
         return ({
             execute

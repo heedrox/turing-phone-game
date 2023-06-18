@@ -46,6 +46,16 @@ function mockGptThemeGenerator(message) {
     }))
 }
 
+function mockAiRandomAnswerer() {
+    const mockRandomAnswerer = {
+        answer: jest.fn()
+    }
+    jest.mock('../telegram-bot/domain/ia-random-answerer', () => ({
+        AiRandomAnswerer: {create: () => mockBot}
+    }))
+    return mockRandomAnswerer;
+}
+
 function requestWithChatAndText(id, text) {
     return {
         body: {
@@ -70,5 +80,6 @@ module.exports = {
     mockRandomNumberGenerator,
     mockResponse,
     requestWithChatAndText,
-    mockGptThemeGenerator
+    mockGptThemeGenerator,
+    mockAiRandomAnswerer
 }

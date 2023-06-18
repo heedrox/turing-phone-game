@@ -1,6 +1,6 @@
 const admin = require('firebase-admin');
 const { removeDatabase } = require('../test-utils/remove-database')
-const { mockDelayedExecutor, mockGptMessageGenerator, mockRandomNumberGenerator, mockResponse, mockTelegramBot, requestWithChatAndText, mockGptThemeGenerator } = require('../test-utils/mocks')
+const { mockDelayedExecutor, mockGptMessageGenerator, mockRandomNumberGenerator, mockResponse, mockTelegramBot, requestWithChatAndText, mockGptThemeGenerator, mockAiRandomAnswerer } = require('../test-utils/mocks')
 
 require('dotenv').config();
 
@@ -19,7 +19,7 @@ describe('Telegram Bot', () => {
         const snapshot = await admin.firestore().collection('partidas').get()
         await Promise.all(snapshot.docs.map(doc => doc.ref.delete()));
         await removeDatabase(admin.firestore());
-        jest.resetModules()
+        jest.resetModules()        
     })
 
     it('returns gracefully when no message', async () => {
@@ -172,6 +172,7 @@ describe('Telegram Bot', () => {
                 chatIds: [12345, 67890, 19283]
             });
             mockGptThemeGenerator('Contexto: Pregunta de opinión.')
+            mockRandomNumberGenerator(0.25);
 
             const functions = require('./index')
             await functions.telegramBot(req, res);
@@ -287,7 +288,9 @@ describe('Telegram Bot', () => {
             beforeEach(async () => {
                 await admin.firestore().collection('partidas').doc('ABC123').set({
                     chatIds: [12345, 67890, 19283],
-                    started: 1
+                    started: 1,
+                    aiName: 'LucidElephant',
+                    aiEmoji: 'xx'
                 });
                 await admin.firestore().doc('partidas/ABC123/players/12345').set({
                     id: 12345,
