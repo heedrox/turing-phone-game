@@ -303,7 +303,12 @@ describe('Telegram Bot', () => {
                 await functions.telegramBot(req, res);
                 
                 const messages = await admin.firestore().collection('partidas/ABC123/messages').get()                 
-                expect(messages.docs.length).toBe(1)
+                expect(messages.docs[0].data()).toStrictEqual({
+                    "created": expect.anything(),
+                    "content": "Hello!",
+                    "playerName": "name1",
+                    "playerId": 12345
+                })
             })
             it('gets an answer from GPT if greater than 50% chance', async () => {
 
@@ -320,6 +325,32 @@ describe('Telegram Bot', () => {
                 expect(mockBot.sendMessage).toHaveBeenCalledWith(67890, '<b>emoji-ai name-ai</b>: HelloGPT!', { parse_mode: 'HTML' })
                 expect(mockBot.sendMessage).toHaveBeenCalledWith(19283, '<b>emoji-ai name-ai</b>: HelloGPT!', { parse_mode: 'HTML' })
                 expect(mockBot.sendMessage).toHaveBeenCalledWith(12345, '<b>emoji-ai name-ai</b>: HelloGPT!', { parse_mode: 'HTML' })
+            }) 
+            it('the answer from GPT is persisted', async () => {
+                const res = mockResponse()
+                const req = requestWithChatAndText(12345, 'Hello!');
+                mockTelegramBot();
+                mockRandomNumberGenerator(0.75);
+                mockGptMessageGenerator('HelloGPT!')
+    
+                const functions = require('./index')
+                await functions.telegramBot(req, res);
+    
+                expect(res.sendStatus).toHaveBeenCalledWith(200)
+                const messages = await admin.firestore().collection('partidas/ABC123/messages').get()                 
+                const docs = messages.docs.map(d => d.data())
+                expect(docs).toContainEqual({
+                    "created": expect.anything(),
+                    "content": "Hello!",
+                    "playerName": "name1",
+                    "playerId": 12345
+                })
+                expect(docs).toContainEqual({
+                    "created": expect.anything(),
+                    "content": "Hello!",
+                    "playerName": "name1",
+                    "playerId": 12345
+                })
             }) 
             it('does not get an answer from GPT if less than 50% chance', async () => {
 

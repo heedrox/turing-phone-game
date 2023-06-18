@@ -48,7 +48,8 @@ exports.Broadcast = ({
                     const gptAnswerPromises = games
                     .flatMap(game => game.chatIds)
                     .map(id => bot.sendMessage(id, addPlayerName(aiPlayer, message), {parse_mode: 'HTML'}) )
-                    return await Promise.all(gptAnswerPromises)
+                    await Promise.all(gptAnswerPromises)
+                    await db.addPreviousMessage(gameCode, aiPlayer, message)  
                 }, timeDelay)        
             }
         }

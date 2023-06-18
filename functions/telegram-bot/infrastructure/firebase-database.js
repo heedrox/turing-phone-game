@@ -88,7 +88,8 @@ async function getPreviousMessages(code) {
 async function addPreviousMessage(code, player, text) {
     await db.collection(`${GAMES_COLLECTION}/${code}/messages`).add({
         content: text,
-        name: player.name,
+        playerName: player.name,
+        playerId: player.id,
         created: FieldValue.serverTimestamp() 
     })
 }
