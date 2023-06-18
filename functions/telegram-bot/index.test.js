@@ -17,6 +17,15 @@ function mockTelegramBot() {
     return mockBot;
 }
 
+function mockRandomNumberGenerator(number) {
+    const mockRandomNumberGenerator = {
+        sendMessage: jest.fn()
+    }
+    jest.mock('./infrastructure/random-number-generator', () => ({
+        RandomNumberGenerator: { create: () => mockRandomNumberGenerator }
+    }))
+    return mockRandomNumberGenerator
+}
 function requestWithChatAndText(id, text) {
     return {
         body: {
@@ -232,7 +241,7 @@ describe('Telegram Bot', () => {
             expect(res.sendStatus).toHaveBeenCalledWith(200)
             expect(mockBot.sendMessage).toHaveBeenCalledWith(12345, 'No te has unido a ninguna partida. Usa el comando "/join CODIGO" para unirte a una, o "/create" para crear una nueva.')
         })
-        it('broadcasts message when in a non started game', async () => {
+        it('broadcasts message without username and emoji when in a non started game', async () => {
             const res = mockResponse()
             await admin.firestore().collection('partidas').doc('ABC123').set({
                 chatIds: [12345, 67890, 19283]
@@ -247,36 +256,53 @@ describe('Telegram Bot', () => {
             expect(mockBot.sendMessage).toHaveBeenCalledWith(67890, 'Hello!', { parse_mode: 'HTML' })
             expect(mockBot.sendMessage).toHaveBeenCalledWith(19283, 'Hello!', { parse_mode: 'HTML' })
         })
-        it('broadcasts message with username and emoji when im started game', async () => {
-            const res = mockResponse()
-            await admin.firestore().collection('partidas').doc('ABC123').set({
-                chatIds: [12345, 67890, 19283],
-                started: 1
-            });
-            await admin.firestore().doc('partidas/ABC123/players/12345').set({
-                id: 12345,
-                name: 'name1',
-                emoji: 'emoji1'
+        describe('when started game', () => {
+            beforeEach(async () => {
+                await admin.firestore().collection('partidas').doc('ABC123').set({
+                    chatIds: [12345, 67890, 19283],
+                    started: 1
+                });
+                await admin.firestore().doc('partidas/ABC123/players/12345').set({
+                    id: 12345,
+                    name: 'name1',
+                    emoji: 'emoji1'
+                })
+                await admin.firestore().doc('partidas/ABC123/players/67890').set({
+                    id: 67890,
+                    name: 'name2',
+                    emoji: 'emoji2'
+                })
+                await admin.firestore().doc('partidas/ABC123/players/19283').set({
+                    id: 19283,
+                    name: 'name3',
+                    emoji: 'emoji3'
+                })
             })
-            await admin.firestore().doc('partidas/ABC123/players/67890').set({
-                id: 67890,
-                name: 'name2',
-                emoji: 'emoji2'
+            it('broadcasts message with username and emoji', async () => {
+                const res = mockResponse()
+                const req = requestWithChatAndText(12345, 'Hello!');
+                const mockBot = mockTelegramBot();
+    
+                const functions = require('./index')
+                await functions.telegramBot(req, res);
+    
+                expect(res.sendStatus).toHaveBeenCalledWith(200)
+                expect(mockBot.sendMessage).toHaveBeenCalledWith(67890, '<b>emoji1 name1</b>: Hello!', { parse_mode: 'HTML' })
+                expect(mockBot.sendMessage).toHaveBeenCalledWith(19283, '<b>emoji1 name1</b>: Hello!', { parse_mode: 'HTML' })
             })
-            await admin.firestore().doc('partidas/ABC123/players/19283').set({
-                id: 19283,
-                name: 'name3',
-                emoji: 'emoji3'
-            })
-            const req = requestWithChatAndText(12345, 'Hello!');
-            const mockBot = mockTelegramBot();
-
-            const functions = require('./index')
-            await functions.telegramBot(req, res);
-
-            expect(res.sendStatus).toHaveBeenCalledWith(200)
-            expect(mockBot.sendMessage).toHaveBeenCalledWith(67890, '<b>emoji1 name1</b>: Hello!', { parse_mode: 'HTML' })
-            expect(mockBot.sendMessage).toHaveBeenCalledWith(19283, '<b>emoji1 name1</b>: Hello!', { parse_mode: 'HTML' })
+            it('gets an answer from GPT if greater than 50% chance', async () => {
+                const res = mockResponse()
+                const req = requestWithChatAndText(12345, 'Hello!');
+                const mockBot = mockTelegramBot();
+                const mockRandom = mockRandomNumberGenerator(0.75);
+    
+                const functions = require('./index')
+                await functions.telegramBot(req, res);
+    
+                expect(res.sendStatus).toHaveBeenCalledWith(200)
+                expect(mockBot.sendMessage).toHaveBeenCalledWith(67890, '<b>emoji1 name1</b>: Hello!', { parse_mode: 'HTML' })
+                expect(mockBot.sendMessage).toHaveBeenCalledWith(19283, '<b>emoji1 name1</b>: Hello!', { parse_mode: 'HTML' })    
+            })    
         })
     })
 });
