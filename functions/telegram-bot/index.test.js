@@ -402,4 +402,94 @@ describe('Telegram Bot', () => {
             }) 
         })
     })
+    describe('when revealing', () => {        
+        it('replies you cannot reveal if you are not in a game', async () => {
+            const res = mockResponse()
+            const req = requestWithChatAndText(12345, '/reveal');
+            const mockBot = mockTelegramBot();
+
+            const functions = require('./index')
+            await functions.telegramBot(req, res);
+
+            expect(res.sendStatus).toHaveBeenCalledWith(200)
+            expect(mockBot.sendMessage).toHaveBeenCalledWith(12345, 'No te has unido a ninguna partida. Usa el comando "/join CODIGO" para unirte a una, o "/create" para crear una nueva.')
+        })
+        describe('when in a game', () => {
+            beforeEach(async () => {
+                await admin.firestore().collection('partidas').doc('ABC123').set({
+                    chatIds: [12345, 67890, 19283],
+                    started: 1,
+                    aiName: 'LucidElephant',
+                    aiEmoji: 'xx'
+                });
+                await admin.firestore().doc('partidas/ABC123/players/12345').set({
+                    id: 12345,
+                    name: 'name1',
+                    emoji: 'emoji1'
+                })
+                await admin.firestore().doc('partidas/ABC123/players/67890').set({
+                    id: 67890,
+                    name: 'name2',
+                    emoji: 'emoji2'
+                })
+                await admin.firestore().doc('partidas/ABC123/players/19283').set({
+                    id: 19283,
+                    name: 'name3',
+                    emoji: 'emoji3'
+                })
+                await admin.firestore().doc('partidas/ABC123').update({
+                    aiName: 'name-ai',
+                    aiEmoji: 'emoji-ai'
+                })
+                mockDelayedExecutor()
+            })
+            it('replies with an inline keyboard', async () => {
+                const res = mockResponse()
+                const req = requestWithChatAndText(12345, '/reveal');
+                const mockBot = mockTelegramBot();
+    
+                const functions = require('./index')
+                await functions.telegramBot(req, res);
+    
+                expect(res.sendStatus).toHaveBeenCalledWith(200)
+                expect(mockBot.sendMessage).toHaveBeenCalledWith(12345, 'Revela quién es la IA:',  {
+                    reply_markup: {
+                      keyboard: [
+                        [{ text: '/reveal name-ai'}],
+                        [{ text: '/reveal name1'}],
+                        [{ text: '/reveal name2'}],
+                        [{ text: '/reveal name3'}],
+                      ]
+                  }
+                })
+            })    
+            it('answers correct when correct answer', async () => {
+                const res = mockResponse()
+                const req = requestWithChatAndText(12345, '/reveal name-ai');
+                const mockBot = mockTelegramBot();
+    
+                const functions = require('./index')
+                await functions.telegramBot(req, res);
+    
+                expect(res.sendStatus).toHaveBeenCalledWith(200)
+                expect(mockBot.sendMessage).toHaveBeenCalledWith(12345, '¡Sí! Diste con la IA. ¡Has ganado!')
+                expect(mockBot.sendMessage).toHaveBeenCalledWith(67890, 'Ooooh, name1 dio con la IA antes que tú. La IA era name-ai')
+                expect(mockBot.sendMessage).toHaveBeenCalledWith(19283, 'Ooooh, name1 dio con la IA antes que tú. La IA era name-ai')
+            })
+
+            it('answers wrong when wrong answer', async () => {
+                const res = mockResponse()
+                const req = requestWithChatAndText(12345, '/reveal name1');
+                const mockBot = mockTelegramBot();
+    
+                const functions = require('./index')
+                await functions.telegramBot(req, res);
+    
+                expect(res.sendStatus).toHaveBeenCalledWith(200)
+                expect(mockBot.sendMessage).toHaveBeenCalledWith(12345, '¡No! La IA era name-ai. ¡Has perdido!')
+                expect(mockBot.sendMessage).toHaveBeenCalledWith(67890, 'name1 se eliminó de la partida por equivocarse al revelar la IA.')
+                expect(mockBot.sendMessage).toHaveBeenCalledWith(19283, 'name1 se eliminó de la partida por equivocarse al revelar la IA.')
+            })
+        })
+    })
 });

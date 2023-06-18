@@ -5,6 +5,8 @@ const {Join} = require("./domain/commands/join");
 const {CreateGame} = require("./domain/commands/create");
 const {Broadcast} = require("./domain/commands/broadcast");
 const {Go} = require("./domain/commands/go");
+const { Reveal } = require("./domain/commands/reveal")
+
 require('dotenv').config();
 
 const db = FirebaseDatabase.create()
@@ -14,6 +16,7 @@ const joinCommand = Join.create(db, bot)
 const createGameCommand = CreateGame.create(db, bot)
 const broadcastCommand = Broadcast.create(db, bot)
 const goCommand = Go.create(db, bot)
+const revealCommand = Reveal.create(db, bot)
 
 exports.telegramBot = async (req, res) => {
     const message = Message.fromBody(req.body)
@@ -25,6 +28,8 @@ exports.telegramBot = async (req, res) => {
         await createGameCommand.execute(message)
     } else if (message.isGo()) {
         await goCommand.execute(message)
+    } else if (message.isReveal()) {
+        await revealCommand.execute(message)
     } else if (message.hasText()) {
         await broadcastCommand.execute(message)
     }

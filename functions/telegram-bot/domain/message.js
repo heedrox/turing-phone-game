@@ -10,6 +10,7 @@ exports.Message = ({
             isJoin: () => text?.startsWith('/join') || text?.startsWith('/start'),
             isCreate: () => text?.startsWith('/create'),
             isGo: () => text?.startsWith('/go'),
+            isReveal: () => text?.startsWith('/reveal'),
             joinCode: () => text?.split(' ')[1]
         }
     }
