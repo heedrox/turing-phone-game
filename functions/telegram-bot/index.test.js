@@ -19,7 +19,7 @@ function mockTelegramBot() {
 
 function mockRandomNumberGenerator(number) {
     const mockRandomNumberGenerator = {
-        get: jest.fn()
+        get: () => number
     }
     jest.mock('./infrastructure/random-number-generator', () => ({
         RandomNumberGenerator: { create: () => mockRandomNumberGenerator }
@@ -322,7 +322,22 @@ describe('Telegram Bot', () => {
                 expect(mockBot.sendMessage).toHaveBeenCalledWith(67890, '<b>emoji-ai name-ai</b>: Message from GPT!', { parse_mode: 'HTML' })
                 expect(mockBot.sendMessage).toHaveBeenCalledWith(19283, '<b>emoji-ai name-ai</b>: Message from GPT!', { parse_mode: 'HTML' })
                 expect(mockBot.sendMessage).toHaveBeenCalledWith(12345, '<b>emoji-ai name-ai</b>: Message from GPT!', { parse_mode: 'HTML' })
-            })    
+            }) 
+            it('does not get an answer from GPT if less than 50% chance', async () => {
+
+                const res = mockResponse()
+                const req = requestWithChatAndText(12345, 'Hello!');
+                const mockBot = mockTelegramBot();
+                mockRandomNumberGenerator(0.25);
+    
+                const functions = require('./index')
+                await functions.telegramBot(req, res);
+    
+                expect(res.sendStatus).toHaveBeenCalledWith(200)
+                expect(mockBot.sendMessage).not.toHaveBeenCalledWith(67890, '<b>emoji-ai name-ai</b>: Message from GPT!', { parse_mode: 'HTML' })
+                expect(mockBot.sendMessage).not.toHaveBeenCalledWith(19283, '<b>emoji-ai name-ai</b>: Message from GPT!', { parse_mode: 'HTML' })
+                expect(mockBot.sendMessage).not.toHaveBeenCalledWith(12345, '<b>emoji-ai name-ai</b>: Message from GPT!', { parse_mode: 'HTML' })
+            }) 
         })
     })
 });

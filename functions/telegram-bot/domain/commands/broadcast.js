@@ -33,14 +33,16 @@ exports.Broadcast = ({
             await Promise.all(sendingPromises)
 
             if (isStarted) {
-                console.log('generator', randomGenerator)
-                const timeDelay = randomGenerator.get() * 60000
-                await delayedExecutor.execute(() => {
-                    const gptAnswerPromises = games
-                    .flatMap(game => game.chatIds)
-                    .map(id => bot.sendMessage(id, isStarted ? addPlayerName(aiPlayer, 'Message from GPT!') : text, {parse_mode: 'HTML'}) )
-                    return Promise.all(gptAnswerPromises)
-                }, timeDelay)    
+                const chanceAnswer = randomGenerator.get()
+                if (chanceAnswer>=0.5) {
+                    const timeDelay = randomGenerator.get() * 60000
+                    await delayedExecutor.execute(() => {
+                        const gptAnswerPromises = games
+                        .flatMap(game => game.chatIds)
+                        .map(id => bot.sendMessage(id, isStarted ? addPlayerName(aiPlayer, 'Message from GPT!') : text, {parse_mode: 'HTML'}) )
+                        return Promise.all(gptAnswerPromises)
+                    }, timeDelay)        
+                }
             }
         }
         return ({
