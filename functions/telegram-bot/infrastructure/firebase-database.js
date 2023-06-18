@@ -80,8 +80,9 @@ async function getPreviousMessages(code) {
     const messages = await db.collection(`${GAMES_COLLECTION}/${code}/messages`).orderBy("created", "asc").get()
     if (messages.empty) return []
     return messages.docs.map((m) => ({
-        content: 'x',
-        name: 'a'
+        content: m.content,
+        playerName: m.playerName,
+        playerId: m.playerId
     }))
 }
 

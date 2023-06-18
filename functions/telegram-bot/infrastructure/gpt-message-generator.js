@@ -18,6 +18,10 @@ const doesItLookLikeSystemInstructions = (message) => {
     return percentageMatch >= 0.8;
 };
 
+const buildMessage = (m) => ({
+    role: m.playerId === 'ai' ? 'assistant' : user, content: m.content, name: m.playerName
+})
+
 const queryGpt = async (previousMessages) => {
     const openAiKey = process.env.OPEN_AI_KEY
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -28,11 +32,7 @@ const queryGpt = async (previousMessages) => {
                 {
                     role: "system", content: ROLE_SYSTEM_INSTRUCTIONS,
                 },
-                ...previousMessages.map((m) => ({
-                    role: "user",
-                    content: m.content,
-                    name: m.name
-                }))
+                ...previousMessages.map(buildMessage)
             ],
             temperature: 0,
             max_tokens: 4096,

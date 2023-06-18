@@ -347,9 +347,9 @@ describe('Telegram Bot', () => {
                 })
                 expect(docs).toContainEqual({
                     "created": expect.anything(),
-                    "content": "Hello!",
-                    "playerName": "name1",
-                    "playerId": 12345
+                    "content": "HelloGPT!",
+                    "playerName": "name-ai",
+                    "playerId": "ai"
                 })
             }) 
             it('does not get an answer from GPT if less than 50% chance', async () => {
