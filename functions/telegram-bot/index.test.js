@@ -241,7 +241,7 @@ describe('Telegram Bot', () => {
                 expect(mockBot.sendMessage).toHaveBeenCalledWith(67890, 'Hello!', { parse_mode: 'HTML' })
                 expect(mockBot.sendMessage).toHaveBeenCalledWith(19283, 'Hello!', { parse_mode: 'HTML' })
             })
-            it('answers back the user that it must start with /go command', async () => {
+            it('answers back the user that it must start with /go command, and the number of players.', async () => {
                 const res = mockResponse()
                 await admin.firestore().collection('partidas').doc('ABC123').set({
                     chatIds: [12345, 67890, 19283]
@@ -258,7 +258,7 @@ describe('Telegram Bot', () => {
                 await functions.telegramBot(req, res);
     
                 expect(res.sendStatus).toHaveBeenCalledWith(200)
-                expect(mockBot.sendMessage).toHaveBeenCalledWith(12345, `Recuerda que la partida no ha empezado todavía. Puedes escribir "/go" para comenzarla.`)
+                expect(mockBot.sendMessage).toHaveBeenCalledWith(12345, `Recuerda que la partida no ha empezado todavía. Puedes escribir "/go" para comenzarla. En este momento hay 3 jugador(es).`)
             })
             it('does not persist messages', async () => {
                 const res = mockResponse()

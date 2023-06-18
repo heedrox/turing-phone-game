@@ -29,6 +29,7 @@ exports.Broadcast = ({
                 emoji: games[0].aiEmoji
             };
             const gameCode = games[0].id
+            const numPlayers = games[0].chatIds.length
 
             const sendingPromises = games
                 .flatMap(game => game.chatIds)
@@ -37,7 +38,7 @@ exports.Broadcast = ({
             await Promise.all(sendingPromises)
 
             if (!isStarted) {
-                await bot.sendMessage(userId, `Recuerda que la partida no ha empezado todavía. Puedes escribir "/go" para comenzarla.`)
+                await bot.sendMessage(userId, `Recuerda que la partida no ha empezado todavía. Puedes escribir "/go" para comenzarla. En este momento hay ${numPlayers} jugador(es).`)
                 return;
             }
             
