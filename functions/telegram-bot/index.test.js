@@ -241,6 +241,25 @@ describe('Telegram Bot', () => {
                 expect(mockBot.sendMessage).toHaveBeenCalledWith(67890, 'Hello!', { parse_mode: 'HTML' })
                 expect(mockBot.sendMessage).toHaveBeenCalledWith(19283, 'Hello!', { parse_mode: 'HTML' })
             })
+            it('answers back the user that it must start with /go command', async () => {
+                const res = mockResponse()
+                await admin.firestore().collection('partidas').doc('ABC123').set({
+                    chatIds: [12345, 67890, 19283]
+                });
+                await admin.firestore().doc('partidas/ABC123/players/12345').set({
+                    id: 12345,
+                    name: 'name1',
+                    emoji: 'emoji1'
+                })
+                const req = requestWithChatAndText(12345, 'Hello!');
+                const mockBot = mockTelegramBot();
+    
+                const functions = require('./index')
+                await functions.telegramBot(req, res);
+    
+                expect(res.sendStatus).toHaveBeenCalledWith(200)
+                expect(mockBot.sendMessage).toHaveBeenCalledWith(12345, `Recuerda que la partida no ha empezado todavía. Puedes escribir "/go" para comenzarla.`)
+            })
             it('does not persist messages', async () => {
                 const res = mockResponse()
                 await admin.firestore().collection('partidas').doc('ABC123').set({

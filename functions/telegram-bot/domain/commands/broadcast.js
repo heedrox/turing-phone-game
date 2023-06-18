@@ -36,7 +36,10 @@ exports.Broadcast = ({
                 .map(id => bot.sendMessage(id, isStarted ? addPlayerName(player, text) : text, {parse_mode: 'HTML'}) )
             await Promise.all(sendingPromises)
 
-            if (!isStarted) return;
+            if (!isStarted) {
+                await bot.sendMessage(userId, `Recuerda que la partida no ha empezado todavía. Puedes escribir "/go" para comenzarla.`)
+                return;
+            }
             
             await db.addPreviousMessage(gameCode, player, text)                        
             const chanceAnswer = randomGenerator.get()

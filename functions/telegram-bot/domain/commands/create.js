@@ -13,7 +13,9 @@ exports.CreateGame = ({
             await db.createEmptyGame(userId, code, player, aiPlayer)
 
             const joinLink = `https://t.me/turingphonebot?start=${code}`;
-            await bot.sendMessage(userId, `Se ha creado una nueva partida. Invita a otras personas con el link: [${joinLink}](${joinLink}) o diciéndoles que escriban "/join ${code}"`, {parse_mode: 'Markdown'});
+            await bot.sendMessage(userId, `Se ha creado una nueva partida.
+            Invita a otras personas con el link: [${joinLink}](${joinLink}) o diciéndoles que escriban "/join ${code}".
+            Puedes empezar la partida cuando haya varias personas escribiendo "/go".`, {parse_mode: 'Markdown'});
         }
         return ({
             execute
