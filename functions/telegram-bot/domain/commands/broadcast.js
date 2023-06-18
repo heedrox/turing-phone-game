@@ -28,22 +28,27 @@ exports.Broadcast = ({
                 name: games[0].aiName,
                 emoji: games[0].aiEmoji
             };
+            const gameCode = games[0].id
+
             const sendingPromises = games
                 .flatMap(game => game.chatIds)
                 .filter(participantId => participantId !== userId)
                 .map(id => bot.sendMessage(id, isStarted ? addPlayerName(player, text) : text, {parse_mode: 'HTML'}) )
             await Promise.all(sendingPromises)
 
+            if (!isStarted) return;
+            
+            await db.addPreviousMessage(gameCode, player, text)                        
             const chanceAnswer = randomGenerator.get()
-
-            if (isStarted && chanceAnswer >= 0.5) {
-                const message = gptMessageGenerator.generate()
+            if (chanceAnswer >= 0.5) {
+                const previousMessages = db.getPreviousMessages(gameCode)
+                const message = await gptMessageGenerator.generate(previousMessages)
                 const timeDelay = randomGenerator.get() * 60000
-                await delayedExecutor.execute(() => {
+                await delayedExecutor.execute(async () => {
                     const gptAnswerPromises = games
                     .flatMap(game => game.chatIds)
                     .map(id => bot.sendMessage(id, addPlayerName(aiPlayer, message), {parse_mode: 'HTML'}) )
-                    return Promise.all(gptAnswerPromises)
+                    return await Promise.all(gptAnswerPromises)
                 }, timeDelay)        
             }
         }

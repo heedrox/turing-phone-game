@@ -76,6 +76,23 @@ async function startGame(code) {
     return await updateGame(code, {started: 1})
 }
 
+async function getPreviousMessages(code) {
+    const messages = await db.collection(`${GAMES_COLLECTION}/${code}/messages`).get()
+    if (messages.empty) return []
+    return messages.docs.map((m) => ({
+        content: 'x',
+        name: 'a'
+    }))
+}
+
+async function addPreviousMessage(code, player, text) {
+    await db.collection(`${GAMES_COLLECTION}/${code}/messages`).add({
+        content: text,
+        name: player.name,
+        created: FieldValue.serverTimestamp() 
+    })
+}
+
 exports.FirebaseDatabase = {
     create: () => {
         init();
@@ -87,6 +104,8 @@ exports.FirebaseDatabase = {
             removeUserFromAllGames,
             findGamesByUser,
             startGame,
+            getPreviousMessages,
+            addPreviousMessage
         }
     }
 }

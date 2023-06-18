@@ -1,66 +1,11 @@
-// const admin = require('firebase-admin');
 const admin = require('firebase-admin');
-const functions = require("./index");
+const { removeDatabase } = require('../test-utils/remove-database')
+const { mockDelayedExecutor, mockGptMessageGenerator, mockRandomNumberGenerator, mockResponse, mockTelegramBot, requestWithChatAndText } = require('../test-utils/mocks')
+
 require('dotenv').config();
 
 if (admin.apps.length === 0) {
     admin.initializeApp();
-}
-
-function mockTelegramBot() {
-    const mockBot = {
-        sendMessage: jest.fn()
-    }
-    jest.mock('./infrastructure/telegram-bot-creator', () => ({
-        TelegramBotCreator: {create: () => mockBot}
-    }))
-    return mockBot;
-}
-
-function mockRandomNumberGenerator(number) {
-    const mockRandomNumberGenerator = {
-        get: () => number
-    }
-    jest.mock('./infrastructure/random-number-generator', () => ({
-        RandomNumberGenerator: { create: () => mockRandomNumberGenerator }
-    }))
-    return mockRandomNumberGenerator
-}
-
-function mockDelayedExecutor() {
-    const mockExecutor = {
-        execute: (fn) => fn()
-    }
-    jest.mock('./infrastructure/delayed-executor', () => ({
-        DelayedExecutor: { create: () => mockExecutor }
-    }))
-    return mockExecutor
-}
-
-function mockGptMessageGenerator(message) {
-    const mockGenerator = {
-        generate: () => message
-    }
-    jest.mock('./infrastructure/gpt-message-generator', () => ({
-        GptMessageGenerator: { create: () => mockGenerator }
-    }))
-}
-
-function requestWithChatAndText(id, text) {
-    return {
-        body: {
-            message: {
-                chat: {
-                    id,
-                },
-                text
-            },
-        },
-    };
-}
-
-function mockResponse() {
-    return {sendStatus: jest.fn()};
 }
 
 describe('Telegram Bot', () => {
@@ -68,10 +13,12 @@ describe('Telegram Bot', () => {
     beforeEach(async () => {
         const snapshot = await admin.firestore().collection('partidas').get()
         await Promise.all(snapshot.docs.map(doc => doc.ref.delete()));
+        await removeDatabase(admin.firestore());
     })
     afterEach(async () => {
         const snapshot = await admin.firestore().collection('partidas').get()
         await Promise.all(snapshot.docs.map(doc => doc.ref.delete()));
+        await removeDatabase(admin.firestore());
         jest.resetModules()
     })
 
@@ -264,21 +211,48 @@ describe('Telegram Bot', () => {
             expect(res.sendStatus).toHaveBeenCalledWith(200)
             expect(mockBot.sendMessage).toHaveBeenCalledWith(12345, 'No te has unido a ninguna partida. Usa el comando "/join CODIGO" para unirte a una, o "/create" para crear una nueva.')
         })
-        it('broadcasts message without username and emoji when in a non started game', async () => {
-            const res = mockResponse()
-            await admin.firestore().collection('partidas').doc('ABC123').set({
-                chatIds: [12345, 67890, 19283]
-            });
-            const req = requestWithChatAndText(12345, 'Hello!');
-            const mockBot = mockTelegramBot();
-
-            const functions = require('./index')
-            await functions.telegramBot(req, res);
-
-            expect(res.sendStatus).toHaveBeenCalledWith(200)
-            expect(mockBot.sendMessage).toHaveBeenCalledWith(67890, 'Hello!', { parse_mode: 'HTML' })
-            expect(mockBot.sendMessage).toHaveBeenCalledWith(19283, 'Hello!', { parse_mode: 'HTML' })
+        describe('when not started game', () => {
+            it('broadcasts message without username and emoji', async () => {
+                const res = mockResponse()
+                await admin.firestore().collection('partidas').doc('ABC123').set({
+                    chatIds: [12345, 67890, 19283]
+                });
+                await admin.firestore().doc('partidas/ABC123/players/12345').set({
+                    id: 12345,
+                    name: 'name1',
+                    emoji: 'emoji1'
+                })
+                const req = requestWithChatAndText(12345, 'Hello!');
+                const mockBot = mockTelegramBot();
+    
+                const functions = require('./index')
+                await functions.telegramBot(req, res);
+    
+                expect(res.sendStatus).toHaveBeenCalledWith(200)
+                expect(mockBot.sendMessage).toHaveBeenCalledWith(67890, 'Hello!', { parse_mode: 'HTML' })
+                expect(mockBot.sendMessage).toHaveBeenCalledWith(19283, 'Hello!', { parse_mode: 'HTML' })
+            })
+            it('does not persist messages', async () => {
+                const res = mockResponse()
+                await admin.firestore().collection('partidas').doc('ABC123').set({
+                    chatIds: [12345, 67890, 19283]
+                });
+                await admin.firestore().doc('partidas/ABC123/players/12345').set({
+                    id: 12345,
+                    name: 'name1',
+                    emoji: 'emoji1'
+                })
+                const req = requestWithChatAndText(12345, 'Hello!');
+                const mockBot = mockTelegramBot();
+    
+                const functions = require('./index')
+                await functions.telegramBot(req, res);
+    
+                const messages = await admin.firestore().collection('partidas/ABC123/messages').get()                 
+                expect(messages.docs.length).toBe(0)
+            })
         })
+       
         describe('when started game', () => {
             beforeEach(async () => {
                 await admin.firestore().collection('partidas').doc('ABC123').set({
@@ -310,6 +284,7 @@ describe('Telegram Bot', () => {
                 const res = mockResponse()
                 const req = requestWithChatAndText(12345, 'Hello!');
                 const mockBot = mockTelegramBot();
+                mockRandomNumberGenerator(0.25);
     
                 const functions = require('./index')
                 await functions.telegramBot(req, res);
@@ -317,6 +292,18 @@ describe('Telegram Bot', () => {
                 expect(res.sendStatus).toHaveBeenCalledWith(200)
                 expect(mockBot.sendMessage).toHaveBeenCalledWith(67890, '<b>emoji1 name1</b>: Hello!', { parse_mode: 'HTML' })
                 expect(mockBot.sendMessage).toHaveBeenCalledWith(19283, '<b>emoji1 name1</b>: Hello!', { parse_mode: 'HTML' })
+            })
+            it('persists them in database', async () => {
+                const res = mockResponse()
+                const req = requestWithChatAndText(12345, 'Hello!');
+                const mockBot = mockTelegramBot();
+                mockRandomNumberGenerator(0.25);
+    
+                const functions = require('./index')
+                await functions.telegramBot(req, res);
+                
+                const messages = await admin.firestore().collection('partidas/ABC123/messages').get()                 
+                expect(messages.docs.length).toBe(1)
             })
             it('gets an answer from GPT if greater than 50% chance', async () => {
 
