@@ -218,7 +218,9 @@ describe('Telegram Bot', () => {
             await functions.telegramBot(req, res);
 
             expect(res.sendStatus).toHaveBeenCalledWith(200)
-            expect(mockBot.sendMessage).toHaveBeenCalledWith(12345, 'No te has unido a ninguna partida. Usa el comando "/join CODIGO" para unirte a una, o "/create" para crear una nueva.')
+            expect(mockBot.sendMessage).toHaveBeenCalledWith(12345, 
+                expect.stringMatching(/No te has unido a ninguna partida todavía./)
+            )
         })
         describe('when not started game', () => {
             it('broadcasts message without username and emoji', async () => {

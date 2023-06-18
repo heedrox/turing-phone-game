@@ -4,7 +4,8 @@
   "scripts": {
     "lint": "eslint .",
     "serve:firebase": "firebase emulators:start",
-    "serve:ngrok": "./scripts/config-telegram.sh",
+    "serve:ngrok": "./scripts/config-telegram-local.sh",
+    "serve:prod": "./scripts/config-telegram-prod.sh",
     "shell": "firebase functions:shell",
     "start": "npm run shell",
     "deploy": "firebase deploy --only functions",

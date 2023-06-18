@@ -18,7 +18,11 @@ exports.Broadcast = ({
             if (games.length === 0) {
                 return await bot.sendMessage(
                     userId,
-                    'No te has unido a ninguna partida. Usa el comando "/join CODIGO" para unirte a una, o "/create" para crear una nueva.'
+                    'Te damos la bienvenida a Turing Phone, un juego multijugador en el que competirás contra tus amistades para descubrir quién es la IA.\n\n'+
+                    'No te has unido a ninguna partida todavía. Crea una partida con el comando "/create", o únete a una partida ya existente con el comando "/join".\n\n'+
+                    'Una vez que todas las personas estén en la partida, una de ellas debe escribir "/go". En ese momento, la partida comenzará.\n'+
+                    'El objetivo es mantener la conversación haciendo creer a tus amistades que eres la IA. ¿Crees que puedes engañarles?\n'+
+                    'Una vez que creas quién es la IA, revélala con el comando "/reveal". Si aciertas, habrás ganado. ¡Buena suerte!'
                 );
             }
             const isStarted = games[0].started === 1
