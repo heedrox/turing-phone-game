@@ -1,6 +1,6 @@
 // Genera un código de partida aleatorio
 function create() {
-    const characters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    const characters = 'abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNOPQRSTUVWXYZ0123456789';
     let code = '';
 
     for (let i = 0; i < 8; i++) {
