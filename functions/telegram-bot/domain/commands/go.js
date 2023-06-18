@@ -21,7 +21,13 @@ exports.Go = ({
             }
             await db.startGame(code)
             const theme = await themeGenerator.generate()
-            await Promise.all(games[0].chatIds.map(chatId => bot.sendMessage(chatId, `¡Empieza la partida, suerte! ${theme}`)))
+            const startMessage = `¡Empieza la partida, suerte! ${theme}`
+            await db.addPreviousMessage(code, {
+                id: 0,
+                name: "ai",
+                emoji: null                
+            }, startMessage)  
+            await Promise.all(games[0].chatIds.map(chatId => bot.sendMessage(chatId, startMessage)))
         }
         return ({
             execute

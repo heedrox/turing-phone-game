@@ -182,6 +182,14 @@ describe('Telegram Bot', () => {
             expect(mockBot.sendMessage).toHaveBeenCalledWith(12345, '¡Empieza la partida, suerte! Contexto: Pregunta de opinión.')
             expect(mockBot.sendMessage).toHaveBeenCalledWith(67890, '¡Empieza la partida, suerte! Contexto: Pregunta de opinión.')
             expect(mockBot.sendMessage).toHaveBeenCalledWith(19283, '¡Empieza la partida, suerte! Contexto: Pregunta de opinión.')
+            const messages = await admin.firestore().collection('partidas/ABC123/messages').get()                 
+            const docs = messages.docs.map(d => d.data())
+            expect(docs).toContainEqual({
+                "created": expect.anything(),
+                "content": "¡Empieza la partida, suerte! Contexto: Pregunta de opinión.",
+                "playerName": "ai",
+                "playerId": 0
+            })
         })
         it('does not start game if not 2 players at least', async () => {
             const res = mockResponse()
